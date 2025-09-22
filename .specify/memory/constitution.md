@@ -1,50 +1,115 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version change: 1.1.0 → 1.1.1
+- Modified sections: 開發標準 - added Python package management specification
+- Added guidance: uv as mandatory Python package manager
+- Templates requiring updates: ✅ No template changes needed (existing task templates compatible with uv)
+- Follow-up TODOs: None
+-->
+
+# PTT 爬蟲系統 Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. 增量爬取原則 (Incremental Crawling)
+系統必須實現增量爬取機制，避免重複爬取已處理的內容。每次爬取前必須檢查狀態記錄，只爬取新增或更新的內容。系統必須維護可靠的狀態追蹤機制，確保爬取的連續性和一致性。
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+**理由**: PTT 內容龐大且持續更新，重複爬取浪費資源並可能導致 IP 封鎖。
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. 尊重來源網站 (Respectful Crawling)
+必須遵守 robots.txt 規範和合理的爬取頻率限制。實現請求間隔控制，避免對 PTT 伺服器造成過大負載。實現錯誤重試機制和斷路器模式，在遇到限制時優雅降級。
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**理由**: 確保爬蟲行為合法合規，維護與來源網站的良好關係。
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. 可靠性優先 (Reliability First)
+所有爬取操作必須具備錯誤處理和恢復機制。實現冪等性設計，確保重複執行不會產生副作用。建立完整的監控和告警系統，及時發現並處理異常狀況。
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**理由**: 爬蟲系統需要長期穩定運行，網路環境和目標網站狀態不可控。
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. 狀態持久化 (State Persistence)
+爬取狀態必須採用混合持久化策略，確保在任何故障情況下都能恢復。系統必須同時使用 Redis 提供高效能即時狀態管理，以及 JSON 檔案提供可靠的持久化備份。所有狀態變更必須同步更新至兩個儲存層，並實現自動狀態恢復機制。系統啟動時必須檢查 Redis 可用性，若 Redis 資料遺失則自動從 JSON 備份恢復狀態。
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**理由**: Redis 重啟會導致狀態重置，純記憶體儲存無法保證資料持久性，需要檔案系統備份確保系統故障後能夠恢復爬取進度。
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. 結構化數據處理 (Structured Data Processing)
+PTT 內容必須解析為結構化格式，包含標題、作者、時間、內容、回覆等完整資訊。實現數據驗證和清理機制，確保提取數據的品質。建立標準化的數據模型和儲存格式。
+
+**理由**: 結構化數據便於後續分析和查詢，提高數據價值。
+
+## 數據管理要求
+
+### 儲存架構
+- **主要數據庫**: PostgreSQL 用於結構化數據儲存
+- **狀態管理雙層架構**:
+  - **Redis**: 高效能即時狀態追蹤和進度查詢（設定 AOF 或 RDB 持久化）
+  - **JSON 檔案**: 可靠的狀態備份，每次狀態變更時同步更新
+  - **狀態同步**: 所有狀態變更必須原子性地同時更新 Redis 和 JSON 檔案
+  - **恢復機制**: 系統啟動時檢查 Redis，若資料不完整則從 JSON 檔案恢復
+- **內容儲存**: 支援文件系統或雲端儲存作為原始內容備份
+- **備份策略**: 定期自動備份，支援增量和完整備份
+
+### 狀態持久化實作要求
+- **JSON 狀態檔案結構**: 包含已爬取 URL 清單、最後爬取時間戳、錯誤重試次數、板塊進度等
+- **狀態檔案命名**: 使用時間戳和版本號確保檔案唯一性（如：`crawl_state_20250922_v1.json`）
+- **原子性寫入**: 使用暫存檔案加原子移動確保 JSON 檔案寫入完整性
+- **狀態驗證**: 從 JSON 恢復狀態時必須驗證資料完整性和格式正確性
+- **版本相容性**: JSON 格式變更時必須保持向後相容或提供遷移機制
+
+### 數據保留政策
+- 爬取狀態保留時間不少於 30 天
+- JSON 狀態備份檔案保留不少於 7 個版本
+- 錯誤日誌保留時間不少於 7 天
+- 原始內容根據需求可選擇保留或僅保存解析後數據
+- 實現數據歸檔機制，支援長期儲存需求
+
+## 開發標準
+
+### 技術棧要求
+- **程式語言**: Python 3.11 或更高版本
+- **套件管理**: 必須使用 `uv` 進行套件管理和虛擬環境管理
+- **依賴管理**: 所有依賴必須明確版本並記錄在 `pyproject.toml` 或 `requirements.txt` 中
+- **虛擬環境**: 使用 `uv venv` 建立隔離的開發環境
+
+### 測試要求
+- 所有爬取邏輯必須有對應的單元測試
+- 實現整合測試驗證與 Firecrawl 服務的互動
+- **狀態持久化測試**: 必須測試 Redis 故障恢復、JSON 檔案損壞處理、狀態同步機制
+- 建立模擬測試環境，避免對真實 PTT 網站造成負擔
+- 測試覆蓋率不低於 80%
+
+### 程式碼品質
+- 遵循 TDD 開發模式，先寫測試再實現功能
+- 所有函數必須有完整的中文註解
+- 實現適當的日誌記錄，支援不同級別的輸出
+- **狀態管理日誌**: 記錄所有狀態變更、備份操作、恢復流程的詳細日誌
+- 遵循 Clean Code 原則，保持程式碼可讀性
+
+### 效能要求
+- 爬取速度控制在合理範圍內（建議每分鐘不超過 60 個頁面）
+- 記憶體使用量在長期運行中保持穩定
+- **狀態同步效能**: JSON 狀態檔案寫入不得影響爬取效能，必要時使用非同步寫入
+- 實現並發控制，支援多執行緒爬取但不超過資源限制
+- 監控系統資源使用情況，實現自動調節機制
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### 修正程序
+本憲法修正需要透過以下程序：
+1. 提出修正提案，說明修正原因和影響範圍
+2. 評估修正對現有程式碼和流程的影響
+3. 更新相關文件和模板
+4. 實施遷移計畫確保平滑過渡
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### 合規檢查
+- 所有程式碼提交必須通過憲法合規檢查
+- 設計決策必須參考本憲法原則並提供適當理由
+- 複雜度增加必須有充分的技術和業務理由
+- 定期檢查現有程式碼是否符合憲法要求
+
+### 版本控制
+- 憲法採用語意化版本控制
+- 重大原則變更為主版本號升級
+- 新增原則或重要說明為次版本號升級
+- 文字修正和澄清為修訂版本號升級
+
+**Version**: 1.1.1 | **Ratified**: 2025-09-22 | **Last Amended**: 2025-09-22
