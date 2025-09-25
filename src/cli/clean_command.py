@@ -1,18 +1,16 @@
 """Clean command implementation."""
 import asyncio
 import logging
-import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 import typer
 
-from ..lib.console import safe_echo
-from ..lib.config_loader import ConfigLoader
-from ..lib.redis_client import RedisClient
 from ..database.article_repository import ArticleRepository
-from ..services.state_service import StateService
+from ..lib.config_loader import ConfigLoader
+from ..lib.console import safe_echo
+from ..lib.redis_client import RedisClient
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +50,9 @@ def clean(
 
     try:
         # Run the async clean operation
-        result = asyncio.run(_async_clean(
-            states=states,
-            cache=cache,
-            logs=logs,
-            older_than=older_than
-        ))
+        result = asyncio.run(
+            _async_clean(states=states, cache=cache, logs=logs, older_than=older_than)
+        )
 
         # Display results
         safe_echo("\n[CLEAN] Cleaning completed")
@@ -97,12 +92,14 @@ def clean(
             raise typer.Exit(1)
 
     except Exception as e:
-        safe_echo(f"[ERROR] Cleaning failed: {str(e)}")
+        safe_echo(f"[ERROR] Cleaning failed: {e!s}")
         logger.error(f"Clean command failed: {e}")
         raise typer.Exit(1)
 
 
-async def _async_clean(states: bool, cache: bool, logs: bool, older_than: int) -> Dict[str, Dict[str, Any]]:
+async def _async_clean(
+    states: bool, cache: bool, logs: bool, older_than: int
+) -> dict[str, dict[str, Any]]:
     """Async helper function to perform cleaning operations."""
     # Load configuration
     config_loader = ConfigLoader()
@@ -111,7 +108,7 @@ async def _async_clean(states: bool, cache: bool, logs: bool, older_than: int) -
     result = {
         "states": {"attempted": states, "success": False, "count": 0, "error": ""},
         "cache": {"attempted": cache, "success": False, "count": 0, "error": ""},
-        "logs": {"attempted": logs, "success": False, "count": 0, "freed_mb": 0.0, "error": ""}
+        "logs": {"attempted": logs, "success": False, "count": 0, "freed_mb": 0.0, "error": ""},
     }
 
     # Clean crawl states
@@ -148,7 +145,7 @@ async def _async_clean(states: bool, cache: bool, logs: bool, older_than: int) -
     return result
 
 
-async def _clean_crawl_states(config: Dict[str, str], older_than: int) -> int:
+async def _clean_crawl_states(config: dict[str, str], older_than: int) -> int:
     """Clean old crawl states from database and Redis."""
     cutoff_date = datetime.now() - timedelta(days=older_than)
     cleaned_count = 0
@@ -158,8 +155,7 @@ async def _clean_crawl_states(config: Dict[str, str], older_than: int) -> int:
     try:
         article_repository = ArticleRepository(
             connection_string=config.get(
-                "DATABASE_URL",
-                "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+                "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
             )
         )
 
@@ -180,9 +176,7 @@ async def _clean_crawl_states(config: Dict[str, str], older_than: int) -> int:
     redis_client = None
     try:
         redis_client = RedisClient(
-            url=config.get("REDIS_URL", "redis://localhost:6379"),
-            retry_attempts=1,
-            retry_delay=0.5
+            url=config.get("REDIS_URL", "redis://localhost:6379"), retry_attempts=1, retry_delay=0.5
         )
 
         # Get Redis keys for crawl states
@@ -194,6 +188,7 @@ async def _clean_crawl_states(config: Dict[str, str], older_than: int) -> int:
                 state_data = await redis_client.get(key)
                 if state_data:
                     import json
+
                     state_info = json.loads(state_data)
                     if "last_crawl_time" in state_info:
                         last_crawl = datetime.fromisoformat(state_info["last_crawl_time"])
@@ -212,16 +207,14 @@ async def _clean_crawl_states(config: Dict[str, str], older_than: int) -> int:
     return cleaned_count
 
 
-async def _clean_redis_cache(config: Dict[str, str]) -> int:
+async def _clean_redis_cache(config: dict[str, str]) -> int:
     """Clean Redis cache data."""
     cleaned_count = 0
     redis_client = None
 
     try:
         redis_client = RedisClient(
-            url=config.get("REDIS_URL", "redis://localhost:6379"),
-            retry_attempts=1,
-            retry_delay=0.5
+            url=config.get("REDIS_URL", "redis://localhost:6379"), retry_attempts=1, retry_delay=0.5
         )
 
         # Get all cache-related keys (exclude state keys)

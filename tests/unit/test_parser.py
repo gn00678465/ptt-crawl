@@ -2,9 +2,10 @@
 
 Test PTT content parsing logic for articles and board pages.
 """
-import pytest
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
+import pytest
 
 from src.services.parser_service import ParserService
 
@@ -12,13 +13,13 @@ from src.services.parser_service import ParserService
 class TestParserService:
     """Test PTT content parsing functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def parser_service(self) -> ParserService:
         """Create parser service instance."""
         return ParserService()
 
-    @pytest.fixture
-    def sample_article_response(self) -> Dict[str, Any]:
+    @pytest.fixture()
+    def sample_article_response(self) -> dict[str, Any]:
         """Sample Firecrawl API response for article parsing."""
         return {
             "success": True,
@@ -44,12 +45,12 @@ class TestParserService:
                     "author": "test_user",
                     "publishTime": "Mon Sep 25 10:30:00 2024",
                     "board": "Stock",
-                }
-            }
+                },
+            },
         }
 
-    @pytest.fixture
-    def sample_board_response(self) -> Dict[str, Any]:
+    @pytest.fixture()
+    def sample_board_response(self) -> dict[str, Any]:
         """Sample board page response."""
         return {
             "success": True,
@@ -68,17 +69,19 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
                 "links": [
                     {
                         "text": "[心得] 投資心得文章",
-                        "url": "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
+                        "url": "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html",
                     },
                     {
                         "text": "[標的] 股票分析文章",
-                        "url": "https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html"
-                    }
-                ]
-            }
+                        "url": "https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html",
+                    },
+                ],
+            },
         }
 
-    async def test_parse_article_success(self, parser_service: ParserService, sample_article_response: Dict[str, Any]):
+    async def test_parse_article_success(
+        self, parser_service: ParserService, sample_article_response: dict[str, Any]
+    ):
         """Test successful article parsing."""
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
         result = await parser_service.parse_article(sample_article_response, url)
@@ -94,13 +97,7 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
 
     async def test_parse_article_empty_content(self, parser_service: ParserService):
         """Test parsing article with empty content."""
-        empty_response = {
-            "success": True,
-            "data": {
-                "markdown": "",
-                "metadata": {}
-            }
-        }
+        empty_response = {"success": True, "data": {"markdown": "", "metadata": {}}}
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
         result = await parser_service.parse_article(empty_response, url)
@@ -111,10 +108,7 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
         """Test parsing article missing title or author."""
         incomplete_response = {
             "success": True,
-            "data": {
-                "markdown": "Some content without proper title or author",
-                "metadata": {}
-            }
+            "data": {"markdown": "Some content without proper title or author", "metadata": {}},
         }
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
@@ -139,7 +133,10 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
         """Test title parsing with category extraction."""
         test_cases = [
             ("# [心得] 投資心得分享", {"title": "[心得] 投資心得分享", "category": "心得"}),
-            ("標題：[標的] 2330 台積電分析", {"title": "[標的] 2330 台積電分析", "category": "標的"}),
+            (
+                "標題：[標的] 2330 台積電分析",
+                {"title": "[標的] 2330 台積電分析", "category": "標的"},
+            ),
             ("Re: [請益] 新手問題", {"title": "Re: [請益] 新手問題", "category": "請益"}),
             ("沒有分類的標題", {"title": "沒有分類的標題", "category": None}),
         ]
@@ -241,7 +238,9 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
         assert not cleaned.startswith(" ")
         assert not cleaned.endswith(" ")
 
-    def test_parse_board_page(self, parser_service: ParserService, sample_board_response: Dict[str, Any]):
+    def test_parse_board_page(
+        self, parser_service: ParserService, sample_board_response: dict[str, Any]
+    ):
         """Test board page parsing for article links."""
         articles = parser_service.parse_board_page(sample_board_response)
 
@@ -256,13 +255,7 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
 
     def test_parse_board_page_empty(self, parser_service: ParserService):
         """Test parsing empty board page."""
-        empty_response = {
-            "success": True,
-            "data": {
-                "markdown": "",
-                "links": []
-            }
-        }
+        empty_response = {"success": True, "data": {"markdown": "", "links": []}}
 
         articles = parser_service.parse_board_page(empty_response)
         assert articles == []
@@ -350,23 +343,14 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
     def test_parser_error_handling(self, parser_service: ParserService):
         """Test parser error handling with malformed data."""
         # Malformed response structure
-        malformed_response = {
-            "success": True,
-            "invalid_structure": "test"
-        }
+        malformed_response = {"success": True, "invalid_structure": "test"}
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
         result = await parser_service.parse_article(malformed_response, url)
         assert result is None
 
         # Response with success=False
-        failed_response = {
-            "success": False,
-            "data": {
-                "markdown": "content",
-                "metadata": {}
-            }
-        }
+        failed_response = {"success": False, "data": {"markdown": "content", "metadata": {}}}
 
         result = await parser_service.parse_article(failed_response, url)
         # Should still try to parse if data exists
@@ -389,13 +373,7 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
 數字：12345
 符號：!@#$%^&*()"""
 
-        response = {
-            "success": True,
-            "data": {
-                "markdown": special_content,
-                "metadata": {}
-            }
-        }
+        response = {"success": True, "data": {"markdown": special_content, "metadata": {}}}
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
         result = await parser_service.parse_article(response, url)
@@ -414,9 +392,9 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html""",
                 "metadata": {
                     "title": "[心得] 正確的標題",
                     "author": "correct_author",
-                    "publishTime": "2024/09/25 10:30:00"
-                }
-            }
+                    "publishTime": "2024/09/25 10:30:00",
+                },
+            },
         }
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"

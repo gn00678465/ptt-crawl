@@ -4,10 +4,9 @@ This module implements the Redis + JSON dual-layer state management.
 """
 import json
 import logging
-import asyncio
-from pathlib import Path
-from typing import Dict, Optional, Any
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
 
 import redis.asyncio as redis
 
@@ -69,7 +68,9 @@ class StateService:
             state_data = {
                 "id": crawl_state.id,
                 "board": crawl_state.board,
-                "last_crawl_time": crawl_state.last_crawl_time.isoformat() if crawl_state.last_crawl_time else None,
+                "last_crawl_time": crawl_state.last_crawl_time.isoformat()
+                if crawl_state.last_crawl_time
+                else None,
                 "last_page_crawled": crawl_state.last_page_crawled,
                 "processed_urls": crawl_state.processed_urls,
                 "failed_urls": crawl_state.failed_urls,
@@ -84,7 +85,7 @@ class StateService:
             await self.redis_client.setex(
                 key,
                 3600 * 24,  # 24 小時過期
-                json.dumps(state_data, ensure_ascii=False)
+                json.dumps(state_data, ensure_ascii=False),
             )
 
             logger.debug(f"狀態已同步到 Redis: {crawl_state.board}")
@@ -95,7 +96,7 @@ class StateService:
             self._redis_available = False
             return False
 
-    async def get_redis_state(self, board: str) -> Optional[Dict[str, Any]]:
+    async def get_redis_state(self, board: str) -> Optional[dict[str, Any]]:
         """從 Redis 取得爬取狀態."""
         if not self._redis_available or not self.redis_client:
             return None
@@ -124,7 +125,9 @@ class StateService:
             state_data = {
                 "id": crawl_state.id,
                 "board": crawl_state.board,
-                "last_crawl_time": crawl_state.last_crawl_time.isoformat() if crawl_state.last_crawl_time else None,
+                "last_crawl_time": crawl_state.last_crawl_time.isoformat()
+                if crawl_state.last_crawl_time
+                else None,
                 "last_page_crawled": crawl_state.last_page_crawled,
                 "processed_urls": crawl_state.processed_urls,
                 "failed_urls": crawl_state.failed_urls,
@@ -137,7 +140,7 @@ class StateService:
                 "saved_at": datetime.now().isoformat(),
             }
 
-            with open(json_file, 'w', encoding='utf-8') as f:
+            with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(state_data, f, ensure_ascii=False, indent=2)
 
             logger.debug(f"狀態已儲存到 JSON: {json_file}")
@@ -147,7 +150,7 @@ class StateService:
             logger.error(f"儲存 JSON 狀態失敗: {e}")
             return False
 
-    async def get_json_state(self, board: str) -> Optional[Dict[str, Any]]:
+    async def get_json_state(self, board: str) -> Optional[dict[str, Any]]:
         """從 JSON 檔案讀取爬取狀態."""
         try:
             json_file = self.json_state_dir / f"{board}.json"
@@ -155,7 +158,7 @@ class StateService:
             if not json_file.exists():
                 return None
 
-            with open(json_file, 'r', encoding='utf-8') as f:
+            with open(json_file, encoding="utf-8") as f:
                 state_data = json.load(f)
 
             logger.debug(f"從 JSON 讀取狀態: {json_file}")
@@ -176,7 +179,9 @@ class StateService:
             crawl_state = CrawlState(
                 id=state_data["id"],
                 board=state_data["board"],
-                last_crawl_time=datetime.fromisoformat(state_data["last_crawl_time"]) if state_data["last_crawl_time"] else None,
+                last_crawl_time=datetime.fromisoformat(state_data["last_crawl_time"])
+                if state_data["last_crawl_time"]
+                else None,
                 last_page_crawled=state_data["last_page_crawled"],
                 processed_urls=state_data["processed_urls"],
                 failed_urls=state_data["failed_urls"],
@@ -222,7 +227,7 @@ class StateService:
             logger.error(f"清理過期狀態失敗: {e}")
             return 0
 
-    async def get_all_board_states(self) -> Dict[str, Dict[str, Any]]:
+    async def get_all_board_states(self) -> dict[str, dict[str, Any]]:
         """取得所有看板的狀態."""
         states = {}
 
@@ -277,7 +282,7 @@ class StateService:
 
         return success
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """健康檢查."""
         health = {
             "redis_available": self._redis_available,

@@ -2,40 +2,38 @@
 
 Test business logic and edge cases for crawl services, state management, and integrations.
 """
-import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime, timedelta
-from typing import Dict, Any, List
+from datetime import datetime
+from unittest.mock import AsyncMock, Mock
 
-from src.services.crawl_service import CrawlService
-from src.services.state_service import StateService
-from src.services.firecrawl_service import FirecrawlService, FirecrawlError, FirecrawlResponse
-from src.models.article import Article
+import pytest
+
 from src.models.crawl_state import CrawlState, CrawlStatus
+from src.services.crawl_service import CrawlService
+from src.services.firecrawl_service import FirecrawlError, FirecrawlService
+from src.services.state_service import StateService
 
 
 class TestCrawlService:
     """Test CrawlService business logic."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_dependencies(self):
         """Create mock dependencies for CrawlService."""
         return {
-            'firecrawl_service': Mock(spec=FirecrawlService),
-            'article_repo': AsyncMock(),
-            'crawl_state_repo': AsyncMock(),
-            'state_service': AsyncMock(),
-            'parser_service': AsyncMock(),
-            'config': {
-                'crawl.rate_limit': 60,
-                'crawl.request_delay': 1.0,
-                'crawl.max_retries': 3,
-                'crawl.concurrent_limit': 3,
-            }
+            "firecrawl_service": Mock(spec=FirecrawlService),
+            "article_repo": AsyncMock(),
+            "crawl_state_repo": AsyncMock(),
+            "state_service": AsyncMock(),
+            "parser_service": AsyncMock(),
+            "config": {
+                "crawl.rate_limit": 60,
+                "crawl.request_delay": 1.0,
+                "crawl.max_retries": 3,
+                "crawl.concurrent_limit": 3,
+            },
         }
 
-    @pytest.fixture
+    @pytest.fixture()
     def crawl_service(self, mock_dependencies):
         """Create CrawlService instance with mocked dependencies."""
         return CrawlService(**mock_dependencies)
@@ -43,35 +41,39 @@ class TestCrawlService:
     async def test_crawl_board_basic_success(self, crawl_service: CrawlService, mock_dependencies):
         """Test successful basic board crawling."""
         # Setup mocks
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = None
-        mock_dependencies['crawl_state_repo'].init_crawl_state.return_value = None
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = None
+        mock_dependencies["crawl_state_repo"].init_crawl_state.return_value = None
 
         # Mock crawl state creation
         mock_state = Mock(spec=CrawlState)
         mock_state.board = "Stock"
         mock_state.status = CrawlStatus.IDLE
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = mock_state
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = mock_state
 
         # Mock phase 1 - board page crawling
         mock_response = Mock()
         mock_response.success = True
         mock_response.data = {"markdown": "test content"}
-        mock_dependencies['firecrawl_service'].scrape_board_page = AsyncMock(return_value=mock_response)
-        mock_dependencies['firecrawl_service'].extract_article_links.return_value = [
+        mock_dependencies["firecrawl_service"].scrape_board_page = AsyncMock(
+            return_value=mock_response
+        )
+        mock_dependencies["firecrawl_service"].extract_article_links.return_value = [
             {"url": "https://www.ptt.cc/bbs/Stock/M.1.A.1.html", "title": "Test Article"}
         ]
 
         # Mock phase 2 - article content crawling
-        mock_dependencies['article_repo'].article_exists.return_value = False
-        mock_dependencies['firecrawl_service'].scrape_article_with_retry = AsyncMock(return_value=mock_response)
-        mock_dependencies['parser_service'].parse_article.return_value = {
+        mock_dependencies["article_repo"].article_exists.return_value = False
+        mock_dependencies["firecrawl_service"].scrape_article_with_retry = AsyncMock(
+            return_value=mock_response
+        )
+        mock_dependencies["parser_service"].parse_article.return_value = {
             "title": "Test Article",
             "author": "test_user",
             "content": "test content",
             "category": "心得",
             "publish_date": datetime.now(),
         }
-        mock_dependencies['article_repo'].insert_article.return_value = 1
+        mock_dependencies["article_repo"].insert_article.return_value = 1
 
         # Execute
         result = await crawl_service.crawl_board("Stock", category="心得", pages=1)
@@ -82,20 +84,24 @@ class TestCrawlService:
         assert result["category"] == "心得"
         assert result["articles_new"] >= 0
 
-    async def test_crawl_board_initialization_error(self, crawl_service: CrawlService, mock_dependencies):
+    async def test_crawl_board_initialization_error(
+        self, crawl_service: CrawlService, mock_dependencies
+    ):
         """Test crawl board with state initialization error."""
         # Mock state that can't be initialized
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = None
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = None
 
         with pytest.raises(ValueError, match="無法初始化爬取狀態"):
             await crawl_service.crawl_board("Stock", pages=1)
 
-    async def test_crawl_board_concurrent_crawl_prevention(self, crawl_service: CrawlService, mock_dependencies):
+    async def test_crawl_board_concurrent_crawl_prevention(
+        self, crawl_service: CrawlService, mock_dependencies
+    ):
         """Test prevention of concurrent crawls on same board."""
         # Mock state showing crawl in progress
         mock_state = Mock(spec=CrawlState)
         mock_state.status = CrawlStatus.CRAWLING
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = mock_state
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = mock_state
 
         with pytest.raises(ValueError, match="正在爬取中"):
             await crawl_service.crawl_board("Stock", pages=1, force=False)
@@ -106,25 +112,27 @@ class TestCrawlService:
         mock_state = Mock(spec=CrawlState)
         mock_state.board = "Stock"
         mock_state.status = CrawlStatus.CRAWLING
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = mock_state
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = mock_state
 
         # Should reset state when force=True
         result = await crawl_service.crawl_board("Stock", pages=1, force=True)
 
         # Should have called reset methods
-        mock_dependencies['crawl_state_repo'].update_crawl_state.assert_called()
-        mock_dependencies['crawl_state_repo'].reset_retry_count.assert_called_with("Stock")
+        mock_dependencies["crawl_state_repo"].update_crawl_state.assert_called()
+        mock_dependencies["crawl_state_repo"].reset_retry_count.assert_called_with("Stock")
 
-    async def test_crawl_board_firecrawl_error_handling(self, crawl_service: CrawlService, mock_dependencies):
+    async def test_crawl_board_firecrawl_error_handling(
+        self, crawl_service: CrawlService, mock_dependencies
+    ):
         """Test handling of Firecrawl API errors."""
         # Setup basic mocks
         mock_state = Mock(spec=CrawlState)
         mock_state.board = "Stock"
         mock_state.status = CrawlStatus.IDLE
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = mock_state
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = mock_state
 
         # Mock Firecrawl error
-        mock_dependencies['firecrawl_service'].scrape_board_page = AsyncMock(
+        mock_dependencies["firecrawl_service"].scrape_board_page = AsyncMock(
             side_effect=FirecrawlError("API error", "API_ERROR")
         )
 
@@ -132,10 +140,12 @@ class TestCrawlService:
             await crawl_service.crawl_board("Stock", pages=1)
 
         # Should have updated error state
-        mock_dependencies['crawl_state_repo'].update_crawl_state.assert_called()
-        mock_dependencies['crawl_state_repo'].increment_retry_count.assert_called_with("Stock")
+        mock_dependencies["crawl_state_repo"].update_crawl_state.assert_called()
+        mock_dependencies["crawl_state_repo"].increment_retry_count.assert_called_with("Stock")
 
-    async def test_filter_processed_links_incremental(self, crawl_service: CrawlService, mock_dependencies):
+    async def test_filter_processed_links_incremental(
+        self, crawl_service: CrawlService, mock_dependencies
+    ):
         """Test filtering of already processed links in incremental mode."""
         links = [
             {"url": "https://www.ptt.cc/bbs/Stock/M.1.A.1.html"},
@@ -144,7 +154,9 @@ class TestCrawlService:
         ]
 
         mock_state = Mock(spec=CrawlState)
-        mock_state.is_url_processed.side_effect = lambda url: url == "https://www.ptt.cc/bbs/Stock/M.1.A.1.html"
+        mock_state.is_url_processed.side_effect = (
+            lambda url: url == "https://www.ptt.cc/bbs/Stock/M.1.A.1.html"
+        )
 
         filtered = crawl_service._filter_processed_links(links, mock_state)
 
@@ -163,9 +175,9 @@ class TestCrawlService:
         mock_state.retry_count = 1
         mock_state.get_success_rate.return_value = 0.8
 
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = mock_state
-        mock_dependencies['article_repo'].count_articles_by_board.return_value = 10
-        mock_dependencies['article_repo'].get_recent_articles.return_value = [Mock(), Mock()]
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = mock_state
+        mock_dependencies["article_repo"].count_articles_by_board.return_value = 10
+        mock_dependencies["article_repo"].get_recent_articles.return_value = [Mock(), Mock()]
 
         stats = await crawl_service.get_crawl_statistics("Stock")
 
@@ -184,19 +196,24 @@ class TestCrawlService:
         mock_state.board = "Stock"
         mock_state.failed_urls = [
             "https://www.ptt.cc/bbs/Stock/M.1.A.1.html",
-            "https://www.ptt.cc/bbs/Stock/M.2.A.2.html"
+            "https://www.ptt.cc/bbs/Stock/M.2.A.2.html",
         ]
-        mock_dependencies['crawl_state_repo'].get_crawl_state.return_value = mock_state
+        mock_dependencies["crawl_state_repo"].get_crawl_state.return_value = mock_state
 
         # Mock successful retry
         mock_response = Mock()
         mock_response.success = True
-        mock_dependencies['firecrawl_service'].scrape_article_with_retry = AsyncMock(return_value=mock_response)
-        mock_dependencies['parser_service'].parse_article.return_value = {
-            "title": "Test", "author": "user", "content": "content", "publish_date": datetime.now()
+        mock_dependencies["firecrawl_service"].scrape_article_with_retry = AsyncMock(
+            return_value=mock_response
+        )
+        mock_dependencies["parser_service"].parse_article.return_value = {
+            "title": "Test",
+            "author": "user",
+            "content": "content",
+            "publish_date": datetime.now(),
         }
-        mock_dependencies['article_repo'].article_exists.return_value = False
-        mock_dependencies['article_repo'].insert_article.return_value = 1
+        mock_dependencies["article_repo"].article_exists.return_value = False
+        mock_dependencies["article_repo"].insert_article.return_value = 1
 
         result = await crawl_service.retry_failed_urls("Stock")
 
@@ -208,12 +225,12 @@ class TestCrawlService:
 class TestStateService:
     """Test StateService functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def state_service(self):
         """Create StateService instance."""
         return StateService("redis://localhost:6379", "test_data/state")
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_crawl_state(self):
         """Create sample CrawlState for testing."""
         return CrawlState(
@@ -231,7 +248,9 @@ class TestStateService:
             updated_at=datetime.now(),
         )
 
-    async def test_save_and_get_json_state(self, state_service: StateService, sample_crawl_state: CrawlState):
+    async def test_save_and_get_json_state(
+        self, state_service: StateService, sample_crawl_state: CrawlState
+    ):
         """Test saving and retrieving state from JSON."""
         # Save state
         success = await state_service.save_state_to_json(sample_crawl_state)
@@ -244,7 +263,9 @@ class TestStateService:
         assert state_data["status"] == "completed"
         assert len(state_data["processed_urls"]) == 2
 
-    async def test_recover_state_from_json(self, state_service: StateService, sample_crawl_state: CrawlState):
+    async def test_recover_state_from_json(
+        self, state_service: StateService, sample_crawl_state: CrawlState
+    ):
         """Test recovering CrawlState object from JSON."""
         # Save state first
         await state_service.save_state_to_json(sample_crawl_state)
@@ -267,7 +288,9 @@ class TestStateService:
         # JSON directory should exist after initialization
         assert health["json_dir_exists"] is True
 
-    async def test_cleanup_expired_states(self, state_service: StateService, sample_crawl_state: CrawlState):
+    async def test_cleanup_expired_states(
+        self, state_service: StateService, sample_crawl_state: CrawlState
+    ):
         """Test cleaning up expired state files."""
         # Save a state
         await state_service.save_state_to_json(sample_crawl_state)
@@ -289,7 +312,9 @@ class TestStateService:
         state_data = await state_service.get_json_state("Stock")
         assert state_data is None
 
-    async def test_get_all_board_states(self, state_service: StateService, sample_crawl_state: CrawlState):
+    async def test_get_all_board_states(
+        self, state_service: StateService, sample_crawl_state: CrawlState
+    ):
         """Test getting all board states."""
         # Save multiple states
         await state_service.save_state_to_json(sample_crawl_state)
@@ -307,7 +332,7 @@ class TestStateService:
 class TestFirecrawlService:
     """Test FirecrawlService functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def firecrawl_config(self):
         """Create Firecrawl service configuration."""
         return {
@@ -317,7 +342,7 @@ class TestFirecrawlService:
             "max_retries": 3,
         }
 
-    @pytest.fixture
+    @pytest.fixture()
     def firecrawl_service(self, firecrawl_config):
         """Create FirecrawlService instance."""
         return FirecrawlService(firecrawl_config)
@@ -349,9 +374,9 @@ https://www.ptt.cc/bbs/Stock/M.9876543210.A.456.html
                 "links": [
                     {
                         "text": "[請益] Test Article 3",
-                        "url": "https://www.ptt.cc/bbs/Stock/M.1111111111.A.789.html"
+                        "url": "https://www.ptt.cc/bbs/Stock/M.1111111111.A.789.html",
                     }
-                ]
+                ],
             }
         }
 
@@ -391,7 +416,7 @@ Article content here.""",
                     "author": "test_user",
                     "publishTime": "Mon Sep 25 10:30:00 2024",
                     "board": "Stock",
-                }
+                },
             }
         }
 
@@ -452,13 +477,13 @@ More content here."""
 class TestServiceIntegration:
     """Test integration between different services."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_services(self):
         """Create mock services for integration testing."""
         return {
-            'crawl_service': Mock(spec=CrawlService),
-            'state_service': Mock(spec=StateService),
-            'firecrawl_service': Mock(spec=FirecrawlService),
+            "crawl_service": Mock(spec=CrawlService),
+            "state_service": Mock(spec=StateService),
+            "firecrawl_service": Mock(spec=FirecrawlService),
         }
 
     async def test_crawl_service_state_service_integration(self, mock_services):
@@ -466,10 +491,8 @@ class TestServiceIntegration:
         # This would test how CrawlService uses StateService
         # In practice, this is covered by the CrawlService tests
         # but here we can test specific integration scenarios
-        pass
 
     async def test_error_propagation_between_services(self, mock_services):
         """Test that errors propagate correctly between services."""
         # Test that when Firecrawl fails, CrawlService handles it properly
         # and StateService is updated with error information
-        pass

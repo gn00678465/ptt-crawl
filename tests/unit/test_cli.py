@@ -2,26 +2,26 @@
 
 Test command parameters, validation, and output formatting.
 """
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from pathlib import Path
-import tempfile
 import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 import typer
 from typer.testing import CliRunner
 
-from src.cli.main import app
-from src.cli.crawl_command import crawl
-from src.cli.status_command import status
-from src.cli.config_command import config
 from src.cli.clean_command import clean
+from src.cli.config_command import config
+from src.cli.crawl_command import crawl
+from src.cli.main import app
+from src.cli.status_command import status
 
 
 class TestCLIMain:
     """Test main CLI application."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def runner(self):
         """Create CLI test runner."""
         return CliRunner()
@@ -44,7 +44,7 @@ class TestCLIMain:
 
     def test_global_options_config_file(self, runner: CliRunner):
         """Test global config file option."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             config_data = {"test": "value"}
             json.dump(config_data, f)
             config_file = f.name
@@ -102,7 +102,7 @@ class TestCrawlCommand:
 
     def test_crawl_command_with_output_file(self):
         """Test crawl command with output file."""
-        with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             output_file = Path(f.name)
 
         try:
@@ -132,7 +132,7 @@ class TestCrawlCommand:
         with pytest.raises(typer.Exit):
             crawl(board="Stock", pages=0)  # Should fail validation if implemented
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_crawl_command_output_messages(self, mock_echo):
         """Test that crawl command outputs proper messages."""
         with pytest.raises(typer.Exit):
@@ -181,7 +181,7 @@ class TestStatusCommand:
         with pytest.raises(typer.Exit):
             status(detailed=False)
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_status_command_output_messages(self, mock_echo):
         """Test status command output messages."""
         with pytest.raises(typer.Exit):
@@ -193,7 +193,7 @@ class TestStatusCommand:
         assert any("[STATUS] Query board status: Stock" in call for call in calls)
         assert any("[ERROR] Status query feature not implemented yet" in call for call in calls)
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_status_command_system_status(self, mock_echo):
         """Test status command for system status."""
         with pytest.raises(typer.Exit):
@@ -247,7 +247,7 @@ class TestConfigCommand:
         assert "set" in result.stdout
         assert "reset" in result.stdout
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_config_command_output_messages(self, mock_echo):
         """Test config command output messages."""
         runner = CliRunner()
@@ -257,7 +257,9 @@ class TestConfigCommand:
         calls = [call.args[0] for call in mock_echo.call_args_list]
 
         assert any("[CONFIG] Show config: test.key" in call for call in calls)
-        assert any("[ERROR] Configuration display feature not implemented yet" in call for call in calls)
+        assert any(
+            "[ERROR] Configuration display feature not implemented yet" in call for call in calls
+        )
 
 
 class TestCleanCommand:
@@ -296,7 +298,7 @@ class TestCleanCommand:
         with pytest.raises(typer.Exit):
             clean(states=True, confirm=False)
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_clean_command_output_messages(self, mock_echo):
         """Test clean command output messages."""
         with pytest.raises(typer.Exit):
@@ -325,23 +327,20 @@ class TestCLIInputValidation:
         """Test handling of invalid page ranges."""
         # Pages should be validated by typer's min/max constraints
         # This tests that the constraints are properly defined
-        pass
 
     def test_invalid_format_option_handling(self):
         """Test handling of invalid format options."""
         # This would test typer's choice validation
-        pass
 
     def test_path_parameter_validation(self):
         """Test path parameter validation."""
         # Test that file paths are properly validated
-        pass
 
 
 class TestCLIOutputFormatting:
     """Test CLI output formatting and console handling."""
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_console_output_encoding(self, mock_echo):
         """Test that console output handles encoding properly."""
         with pytest.raises(typer.Exit):
@@ -350,7 +349,7 @@ class TestCLIOutputFormatting:
         mock_echo.assert_called()
         # Should not raise encoding errors
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_error_message_formatting(self, mock_echo):
         """Test error message formatting."""
         with pytest.raises(typer.Exit):
@@ -380,7 +379,7 @@ class TestCLIOutputFormatting:
         assert result.exit_code == 0
         assert "crawl" in result.stdout.lower()
 
-    @patch('src.lib.console.safe_echo')
+    @patch("src.lib.console.safe_echo")
     def test_progress_message_formatting(self, mock_echo):
         """Test progress message formatting."""
         with pytest.raises(typer.Exit):
@@ -397,17 +396,13 @@ class TestCLIOutputFormatting:
 class TestCLIIntegration:
     """Test CLI integration with other components."""
 
-    @patch('src.cli.main.global_config')
+    @patch("src.cli.main.global_config")
     def test_global_config_integration(self, mock_global_config):
         """Test that global config is properly integrated."""
         runner = CliRunner()
 
         # Test that global options are captured
-        result = runner.invoke(app, [
-            "--log-level", "DEBUG",
-            "--dry-run",
-            "--help"
-        ])
+        result = runner.invoke(app, ["--log-level", "DEBUG", "--dry-run", "--help"])
         assert result.exit_code == 0
 
     def test_typer_app_configuration(self):
@@ -443,19 +438,15 @@ class TestCLIErrorHandling:
     def test_keyboard_interrupt_handling(self):
         """Test handling of keyboard interrupts."""
         # This would test Ctrl+C handling in long-running commands
-        pass
 
     def test_permission_error_handling(self):
         """Test handling of permission errors."""
         # This would test file permission issues
-        pass
 
     def test_network_error_handling(self):
         """Test handling of network errors in CLI."""
         # This would test network-related error handling
-        pass
 
     def test_configuration_error_handling(self):
         """Test handling of configuration errors."""
         # This would test missing or invalid configuration handling
-        pass

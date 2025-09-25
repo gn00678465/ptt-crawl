@@ -5,15 +5,15 @@ This module implements the two-phase crawling logic for PTT articles.
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Optional
 
-from ..models.article import Article
-from ..models.crawl_state import CrawlState, CrawlStatus
 from ..database.article_repository import ArticleRepository
 from ..database.crawl_state_repository import CrawlStateRepository
-from .firecrawl_service import FirecrawlService, FirecrawlError
-from .state_service import StateService
+from ..models.article import Article
+from ..models.crawl_state import CrawlState, CrawlStatus
+from .firecrawl_service import FirecrawlError, FirecrawlService
 from .parser_service import ParserService
+from .state_service import StateService
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class CrawlService:
         crawl_state_repo: CrawlStateRepository,
         state_service: StateService,
         parser_service: ParserService,
-        config: Dict[str, Any],
+        config: dict[str, Any],
     ):
         self.firecrawl = firecrawl_service
         self.article_repo = article_repo
@@ -52,7 +52,7 @@ class CrawlService:
         pages: int = 1,
         incremental: bool = True,
         force: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         執行看板爬取作業.
 
@@ -97,9 +97,7 @@ class CrawlService:
             )
 
             # 6. 更新最終狀態
-            final_state = await self._finalize_crawl_state(
-                board, phase1_result, phase2_result
-            )
+            final_state = await self._finalize_crawl_state(board, phase1_result, phase2_result)
 
             # 7. 產生結果摘要
             end_time = datetime.now()
@@ -159,7 +157,7 @@ class CrawlService:
         pages: int,
         incremental: bool,
         crawl_state: CrawlState,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         階段一：爬取看板頁面，取得文章連結列表.
 
@@ -229,8 +227,8 @@ class CrawlService:
         }
 
     def _filter_processed_links(
-        self, links: List[Dict[str, str]], crawl_state: CrawlState
-    ) -> List[Dict[str, str]]:
+        self, links: list[dict[str, str]], crawl_state: CrawlState
+    ) -> list[dict[str, str]]:
         """篩選出尚未處理的連結."""
         unprocessed_links = []
 
@@ -243,8 +241,8 @@ class CrawlService:
         return unprocessed_links
 
     async def _phase2_crawl_article_content(
-        self, article_links: List[Dict[str, str]], crawl_state: CrawlState
-    ) -> Dict[str, Any]:
+        self, article_links: list[dict[str, str]], crawl_state: CrawlState
+    ) -> dict[str, Any]:
         """
         階段二：爬取文章內容並儲存到資料庫.
 
@@ -259,7 +257,7 @@ class CrawlService:
         articles_failed = 0
 
         # 使用信號量控制併發
-        async def process_link(link_data: Dict[str, str]) -> None:
+        async def process_link(link_data: dict[str, str]) -> None:
             nonlocal articles_created, articles_updated, articles_skipped, articles_failed
 
             async with self._semaphore:
@@ -338,7 +336,9 @@ class CrawlService:
         tasks = [process_link(link) for link in article_links]
         await asyncio.gather(*tasks, return_exceptions=True)
 
-        logger.info(f"階段二完成：新增 {articles_created}, 更新 {articles_updated}, 跳過 {articles_skipped}, 失敗 {articles_failed}")
+        logger.info(
+            f"階段二完成：新增 {articles_created}, 更新 {articles_updated}, 跳過 {articles_skipped}, 失敗 {articles_failed}"
+        )
 
         return {
             "articles_created": articles_created,
@@ -350,8 +350,8 @@ class CrawlService:
     async def _finalize_crawl_state(
         self,
         board: str,
-        phase1_result: Dict[str, Any],
-        phase2_result: Dict[str, Any],
+        phase1_result: dict[str, Any],
+        phase2_result: dict[str, Any],
     ) -> CrawlState:
         """完成爬取狀態更新."""
         # 判斷最終狀態
@@ -363,9 +363,7 @@ class CrawlService:
             final_status = CrawlStatus.ERROR
 
         # 更新狀態
-        await self.crawl_state_repo.update_crawl_state(
-            board, final_status, error_message=None
-        )
+        await self.crawl_state_repo.update_crawl_state(board, final_status, error_message=None)
 
         # 重置重試次數（成功時）
         if final_status == CrawlStatus.COMPLETED:
@@ -383,7 +381,7 @@ class CrawlService:
         """取得爬取狀態."""
         return await self.crawl_state_repo.get_crawl_state(board)
 
-    async def get_crawl_statistics(self, board: str) -> Dict[str, Any]:
+    async def get_crawl_statistics(self, board: str) -> dict[str, Any]:
         """取得爬取統計資訊."""
         state = await self.crawl_state_repo.get_crawl_state(board)
         if not state:
@@ -404,7 +402,7 @@ class CrawlService:
             "retry_count": state.retry_count,
         }
 
-    async def retry_failed_urls(self, board: str) -> Dict[str, Any]:
+    async def retry_failed_urls(self, board: str) -> dict[str, Any]:
         """重試失敗的 URL."""
         state = await self.crawl_state_repo.get_crawl_state(board)
         if not state or not state.failed_urls:
@@ -417,9 +415,7 @@ class CrawlService:
 
         # 清空失敗列表，重新嘗試
         state.failed_urls.clear()
-        await self.crawl_state_repo.update_crawl_state(
-            board, CrawlStatus.CRAWLING
-        )
+        await self.crawl_state_repo.update_crawl_state(board, CrawlStatus.CRAWLING)
 
         # 執行階段二爬取
         result = await self._phase2_crawl_article_content(failed_links, state)
@@ -435,14 +431,13 @@ class CrawlService:
             "articles_failed": result["articles_failed"],
         }
 
-    async def get_current_config(self) -> Dict[str, Any]:
+    async def get_current_config(self) -> dict[str, Any]:
         """取得目前的配置."""
         return self.config.copy()
 
     async def reload_config(self) -> None:
         """重新載入配置."""
         # 這會在 config_loader 中實作
-        pass
 
     async def cleanup_old_states(self, days: int = 30) -> int:
         """清理舊的爬取狀態."""

@@ -7,21 +7,20 @@ PTT Stock 爬蟲基本使用範例
 """
 
 import asyncio
-import sys
 import logging
+import sys
 from pathlib import Path
-from datetime import datetime
 
 # 添加專案根目錄到 Python 路徑
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.services.crawl_service import CrawlService
-from src.services.state_service import StateService
-from src.services.parser_service import ParserService
-from src.repositories.article_repository import ArticleRepository
-from src.lib.redis_client import RedisClient
 from src.lib.config_loader import ConfigLoader
 from src.lib.logging import setup_logging
+from src.lib.redis_client import RedisClient
+from src.repositories.article_repository import ArticleRepository
+from src.services.crawl_service import CrawlService
+from src.services.parser_service import ParserService
+from src.services.state_service import StateService
 
 
 async def basic_crawl_example():
@@ -43,9 +42,7 @@ async def basic_crawl_example():
 
         # 初始化 Redis 客戶端
         redis_client = RedisClient(
-            url=config.get("REDIS_URL", "redis://localhost:6379"),
-            retry_attempts=3,
-            retry_delay=1.0
+            url=config.get("REDIS_URL", "redis://localhost:6379"), retry_attempts=3, retry_delay=1.0
         )
 
         # 初始化各項服務
@@ -53,8 +50,7 @@ async def basic_crawl_example():
         parser_service = ParserService()
         article_repository = ArticleRepository(
             connection_string=config.get(
-                "DATABASE_URL",
-                "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+                "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
             )
         )
 
@@ -63,7 +59,7 @@ async def basic_crawl_example():
             parser_service=parser_service,
             article_repository=article_repository,
             firecrawl_api_url=config.get("FIRECRAWL_API_URL", "http://localhost:3002"),
-            firecrawl_api_key=config.get("FIRECRAWL_API_KEY")
+            firecrawl_api_key=config.get("FIRECRAWL_API_KEY"),
         )
 
         print("✅ 服務初始化完成")
@@ -79,7 +75,7 @@ async def basic_crawl_example():
         db_status = await article_repository.health_check()
         print(f"   資料庫連線: {'✅ 正常' if db_status else '❌ 異常'}")
 
-        if not redis_status['status'] == 'healthy' and not db_status:
+        if redis_status["status"] != "healthy" and not db_status:
             print("❌ 系統狀態異常，請檢查配置")
             return
 
@@ -96,7 +92,7 @@ async def basic_crawl_example():
             category="心得",
             pages=2,
             incremental=False,  # 不使用增量爬取，獲取最新資料
-            force=False
+            force=False,
         )
 
         # 4. 顯示爬取結果
@@ -107,9 +103,9 @@ async def basic_crawl_example():
         print(f"   新增文章數: {result['articles_saved']} 篇")
         print(f"   錯誤數量: {result['errors_count']}")
 
-        if result['errors_count'] > 0:
+        if result["errors_count"] > 0:
             print("   錯誤詳情:")
-            for error in result.get('errors', [])[:3]:  # 只顯示前 3 個錯誤
+            for error in result.get("errors", [])[:3]:  # 只顯示前 3 個錯誤
                 print(f"     - {error}")
 
         # 5. 查詢爬取狀態
@@ -128,10 +124,7 @@ async def basic_crawl_example():
         print("\n💾 步驟 6: 資料匯出範例...")
 
         # 從資料庫查詢最新文章
-        latest_articles = await article_repository.get_articles_by_board(
-            board="Stock",
-            limit=5
-        )
+        latest_articles = await article_repository.get_articles_by_board(board="Stock", limit=5)
 
         if latest_articles:
             print(f"   查詢到 {len(latest_articles)} 篇最新文章:")
@@ -141,21 +134,26 @@ async def basic_crawl_example():
 
             # 匯出為 JSON 檔案
             import json
+
             output_file = Path("examples/output/basic_crawl_result.json")
             output_file.parent.mkdir(exist_ok=True)
 
             export_data = []
             for article in latest_articles:
-                export_data.append({
-                    "title": article.title,
-                    "author": article.author,
-                    "category": article.category,
-                    "content": article.content[:200] + "..." if len(article.content) > 200 else article.content,
-                    "publish_date": article.publish_date.isoformat(),
-                    "board": article.board
-                })
+                export_data.append(
+                    {
+                        "title": article.title,
+                        "author": article.author,
+                        "category": article.category,
+                        "content": article.content[:200] + "..."
+                        if len(article.content) > 200
+                        else article.content,
+                        "publish_date": article.publish_date.isoformat(),
+                        "board": article.board,
+                    }
+                )
 
-            with open(output_file, 'w', encoding='utf-8') as f:
+            with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(export_data, f, ensure_ascii=False, indent=2)
 
             print(f"   ✅ 資料已匯出到: {output_file}")
@@ -168,9 +166,9 @@ async def basic_crawl_example():
 
     finally:
         # 清理資源
-        if 'redis_client' in locals():
+        if "redis_client" in locals():
             await redis_client.close()
-        if 'article_repository' in locals():
+        if "article_repository" in locals():
             await article_repository.close()
 
         print("\n🎯 基本使用範例執行完成")
@@ -187,17 +185,20 @@ async def show_configuration_example():
     print("-" * 30)
 
     print("1. 基本配置 (適合開發環境):")
-    print("""
+    print(
+        """
     DATABASE_URL=postgresql://ptt_user:password@localhost:5432/ptt_crawler
     REDIS_URL=redis://localhost:6379
     FIRECRAWL_API_URL=http://localhost:3002
     LOG_LEVEL=INFO
     CRAWL_RATE_LIMIT=60
     CRAWL_REQUEST_DELAY=1.5
-    """)
+    """
+    )
 
     print("2. 生產環境配置:")
-    print("""
+    print(
+        """
     DATABASE_URL=postgresql://prod_user:secure_pass@prod_db:5432/ptt_crawler
     REDIS_URL=redis://prod_redis:6379
     FIRECRAWL_API_URL=https://api.firecrawl.dev
@@ -205,7 +206,8 @@ async def show_configuration_example():
     LOG_LEVEL=WARNING
     CRAWL_RATE_LIMIT=30
     CRAWL_REQUEST_DELAY=2.0
-    """)
+    """
+    )
 
 
 def show_common_commands():
@@ -242,7 +244,7 @@ if __name__ == "__main__":
     # 詢問是否執行範例
     try:
         user_input = input("\n是否執行基本爬取範例? (y/N): ").strip().lower()
-        if user_input in ['y', 'yes', '是']:
+        if user_input in ["y", "yes", "是"]:
             asyncio.run(basic_crawl_example())
         else:
             print("👋 謝謝使用，範例結束")

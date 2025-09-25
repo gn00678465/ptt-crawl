@@ -1,14 +1,13 @@
 """Config command implementation."""
 import asyncio
-import json
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Optional
 
 import typer
 
-from ..lib.console import safe_echo
-from ..lib.config_loader import ConfigLoader
 from ..database.config_repository import ConfigRepository
+from ..lib.config_loader import ConfigLoader
+from ..lib.console import safe_echo
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ def show(key: Optional[str] = typer.Argument(None, help="Specific configuration 
             # Group configurations by category
             categories = {}
             for k, v in config_data.items():
-                category = k.split('.')[0] if '.' in k else 'general'
+                category = k.split(".")[0] if "." in k else "general"
                 if category not in categories:
                     categories[category] = []
                 categories[category].append((k, v))
@@ -53,13 +52,17 @@ def show(key: Optional[str] = typer.Argument(None, help="Specific configuration 
                 safe_echo(f"\n[{category.upper()}]")
                 for k, v in sorted(items):
                     # Mask sensitive values
-                    display_value = "***" if any(word in k.lower() for word in ['password', 'key', 'token']) else v
+                    display_value = (
+                        "***"
+                        if any(word in k.lower() for word in ["password", "key", "token"])
+                        else v
+                    )
                     safe_echo(f"  {k} = {display_value}")
 
             safe_echo("=" * 50)
 
     except Exception as e:
-        safe_echo(f"[ERROR] Failed to show configuration: {str(e)}")
+        safe_echo(f"[ERROR] Failed to show configuration: {e!s}")
         logger.error(f"Config show command failed: {e}")
         raise typer.Exit(1)
 
@@ -79,17 +82,21 @@ def set(
             safe_echo(f"[SUCCESS] Configuration '{key}' updated successfully")
 
             # Show the new value (masked if sensitive)
-            display_value = "***" if any(word in key.lower() for word in ['password', 'key', 'token']) else value
+            display_value = (
+                "***"
+                if any(word in key.lower() for word in ["password", "key", "token"])
+                else value
+            )
             safe_echo(f"New value: {key} = {display_value}")
         else:
             safe_echo(f"[ERROR] Failed to update configuration '{key}'")
             raise typer.Exit(1)
 
     except ValueError as e:
-        safe_echo(f"[ERROR] Invalid configuration value: {str(e)}")
+        safe_echo(f"[ERROR] Invalid configuration value: {e!s}")
         raise typer.Exit(1)
     except Exception as e:
-        safe_echo(f"[ERROR] Failed to set configuration: {str(e)}")
+        safe_echo(f"[ERROR] Failed to set configuration: {e!s}")
         logger.error(f"Config set command failed: {e}")
         raise typer.Exit(1)
 
@@ -119,18 +126,18 @@ def reset(key: Optional[str] = typer.Argument(None, help="Specific configuration
             if key:
                 safe_echo(f"[SUCCESS] Configuration '{key}' reset to default value")
             else:
-                safe_echo(f"[SUCCESS] All configurations reset to default values")
+                safe_echo("[SUCCESS] All configurations reset to default values")
         else:
-            safe_echo(f"[ERROR] Failed to reset configuration")
+            safe_echo("[ERROR] Failed to reset configuration")
             raise typer.Exit(1)
 
     except Exception as e:
-        safe_echo(f"[ERROR] Failed to reset configuration: {str(e)}")
+        safe_echo(f"[ERROR] Failed to reset configuration: {e!s}")
         logger.error(f"Config reset command failed: {e}")
         raise typer.Exit(1)
 
 
-async def _async_show_config(key: Optional[str]) -> Dict[str, str]:
+async def _async_show_config(key: Optional[str]) -> dict[str, str]:
     """Async helper to load and show configuration."""
     config_loader = ConfigLoader()
 
@@ -142,12 +149,12 @@ async def _async_show_config(key: Optional[str]) -> Dict[str, str]:
         config = {}
 
         # Load defaults
-        if hasattr(config_loader, '_load_defaults'):
+        if hasattr(config_loader, "_load_defaults"):
             defaults = await config_loader._load_defaults()
             config.update(defaults)
 
         # Load from environment
-        if hasattr(config_loader, 'load_from_environment'):
+        if hasattr(config_loader, "load_from_environment"):
             env_config = await config_loader.load_from_environment()
             config.update(env_config)
 
@@ -161,7 +168,7 @@ async def _async_show_config(key: Optional[str]) -> Dict[str, str]:
                 "CRAWL_RATE_LIMIT": "60",
                 "CRAWL_REQUEST_DELAY": "1.5",
                 "CRAWL_MAX_RETRIES": "3",
-                "CRAWL_TIMEOUT": "30"
+                "CRAWL_TIMEOUT": "30",
             }
 
     if key:
@@ -181,8 +188,7 @@ async def _async_set_config(key: str, value: str) -> bool:
     # Initialize repository
     config_repository = ConfigRepository(
         connection_string=config.get(
-            "DATABASE_URL",
-            "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+            "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
         )
     )
 
@@ -203,8 +209,7 @@ async def _async_reset_config(key: Optional[str]) -> bool:
     # Initialize repository
     config_repository = ConfigRepository(
         connection_string=config.get(
-            "DATABASE_URL",
-            "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+            "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
         )
     )
 
@@ -243,18 +248,14 @@ def test():
         safe_echo("\nTest completed")
 
     except Exception as e:
-        safe_echo(f"[ERROR] Configuration test failed: {str(e)}")
+        safe_echo(f"[ERROR] Configuration test failed: {e!s}")
         logger.error(f"Config test command failed: {e}")
         raise typer.Exit(1)
 
 
-async def _async_test_config() -> Dict[str, Any]:
+async def _async_test_config() -> dict[str, Any]:
     """Test configuration system components."""
-    result = {
-        "database_connection": False,
-        "config_loaded": False,
-        "config_count": 0
-    }
+    result = {"database_connection": False, "config_loaded": False, "config_count": 0}
 
     try:
         # Test configuration loading
@@ -266,8 +267,7 @@ async def _async_test_config() -> Dict[str, Any]:
         # Test database connection for config repository
         config_repository = ConfigRepository(
             connection_string=config.get(
-                "DATABASE_URL",
-                "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+                "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
             )
         )
 

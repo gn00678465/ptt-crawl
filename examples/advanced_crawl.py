@@ -11,26 +11,26 @@ PTT Stock 爬蟲進階使用範例
 """
 
 import asyncio
-import sys
 import logging
+import sys
 import time
-import psutil
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import psutil
 
 # 添加專案根目錄到 Python 路徑
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.services.crawl_service import CrawlService
-from src.services.state_service import StateService
-from src.services.parser_service import ParserService
-from src.repositories.article_repository import ArticleRepository
-from src.models.article import Article
-from src.lib.redis_client import RedisClient
 from src.lib.config_loader import ConfigLoader
 from src.lib.logging import setup_logging
+from src.lib.redis_client import RedisClient
+from src.repositories.article_repository import ArticleRepository
+from src.services.crawl_service import CrawlService
+from src.services.parser_service import ParserService
+from src.services.state_service import StateService
 
 
 class AdvancedCrawler:
@@ -42,7 +42,7 @@ class AdvancedCrawler:
         self.start_memory = None
         self.crawl_statistics = defaultdict(int)
 
-    async def initialize_services(self) -> Dict[str, Any]:
+    async def initialize_services(self) -> dict[str, Any]:
         """初始化所有服務"""
         self.logger.info("初始化進階爬蟲服務...")
 
@@ -52,30 +52,29 @@ class AdvancedCrawler:
 
         # 初始化服務
         services = {
-            'redis_client': RedisClient(
+            "redis_client": RedisClient(
                 url=config.get("REDIS_URL", "redis://localhost:6379"),
                 retry_attempts=3,
-                retry_delay=1.0
+                retry_delay=1.0,
             ),
-            'state_service': None,
-            'parser_service': ParserService(),
-            'article_repository': ArticleRepository(
+            "state_service": None,
+            "parser_service": ParserService(),
+            "article_repository": ArticleRepository(
                 connection_string=config.get(
-                    "DATABASE_URL",
-                    "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+                    "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
                 )
             ),
-            'crawl_service': None,
-            'config': config
+            "crawl_service": None,
+            "config": config,
         }
 
-        services['state_service'] = StateService(redis_client=services['redis_client'])
-        services['crawl_service'] = CrawlService(
-            state_service=services['state_service'],
-            parser_service=services['parser_service'],
-            article_repository=services['article_repository'],
+        services["state_service"] = StateService(redis_client=services["redis_client"])
+        services["crawl_service"] = CrawlService(
+            state_service=services["state_service"],
+            parser_service=services["parser_service"],
+            article_repository=services["article_repository"],
             firecrawl_api_url=config.get("FIRECRAWL_API_URL", "http://localhost:3002"),
-            firecrawl_api_key=config.get("FIRECRAWL_API_KEY")
+            firecrawl_api_key=config.get("FIRECRAWL_API_KEY"),
         )
 
         return services
@@ -94,9 +93,11 @@ class AdvancedCrawler:
         elapsed = current_time - self.start_time
         memory_delta = current_memory - self.start_memory
 
-        self.logger.info(f"執行時間: {elapsed:.2f}s, 記憶體使用: {current_memory:.2f}MB ({memory_delta:+.2f}MB)")
+        self.logger.info(
+            f"執行時間: {elapsed:.2f}s, 記憶體使用: {current_memory:.2f}MB ({memory_delta:+.2f}MB)"
+        )
 
-    async def batch_crawl_categories(self, services: Dict[str, Any]) -> Dict[str, Any]:
+    async def batch_crawl_categories(self, services: dict[str, Any]) -> dict[str, Any]:
         """批次爬取多個分類"""
         print("🎯 批次爬取多個分類")
         print("-" * 30)
@@ -110,19 +111,21 @@ class AdvancedCrawler:
             self.log_current_stats()
 
             try:
-                result = await services['crawl_service'].crawl_board(
+                result = await services["crawl_service"].crawl_board(
                     board="Stock",
                     category=category,
                     pages=3,  # 每個分類爬 3 頁
                     incremental=True,  # 使用增量爬取
-                    force=False
+                    force=False,
                 )
 
                 results[category] = result
-                self.crawl_statistics[f"{category}_articles"] = result['articles_crawled']
-                self.crawl_statistics[f"{category}_errors"] = result['errors_count']
+                self.crawl_statistics[f"{category}_articles"] = result["articles_crawled"]
+                self.crawl_statistics[f"{category}_errors"] = result["errors_count"]
 
-                print(f"   ✅ {category}: {result['articles_crawled']} 篇文章, {result['errors_count']} 個錯誤")
+                print(
+                    f"   ✅ {category}: {result['articles_crawled']} 篇文章, {result['errors_count']} 個錯誤"
+                )
 
                 # 短暫延遲以避免過度請求
                 await asyncio.sleep(2)
@@ -134,19 +137,19 @@ class AdvancedCrawler:
 
         return results
 
-    async def incremental_crawl_demo(self, services: Dict[str, Any]):
+    async def incremental_crawl_demo(self, services: dict[str, Any]):
         """增量爬取示範"""
         print("\n🔄 增量爬取示範")
         print("-" * 20)
 
         # 第一次爬取
         print("第一次爬取（建立基線）...")
-        result1 = await services['crawl_service'].crawl_board(
+        result1 = await services["crawl_service"].crawl_board(
             board="Stock",
             category="心得",
             pages=2,
             incremental=False,  # 不使用增量
-            force=True  # 強制爬取
+            force=True,  # 強制爬取
         )
         print(f"   第一次爬取: {result1['articles_crawled']} 篇文章")
 
@@ -156,22 +159,22 @@ class AdvancedCrawler:
 
         # 第二次爬取（增量）
         print("第二次爬取（增量模式）...")
-        result2 = await services['crawl_service'].crawl_board(
+        result2 = await services["crawl_service"].crawl_board(
             board="Stock",
             category="心得",
             pages=2,
             incremental=True,  # 使用增量
-            force=False
+            force=False,
         )
         print(f"   增量爬取: {result2['articles_crawled']} 篇新文章")
 
         # 比較結果
-        print(f"\n📊 增量爬取效果:")
+        print("\n📊 增量爬取效果:")
         print(f"   第一次爬取: {result1['articles_crawled']} 篇")
         print(f"   增量爬取: {result2['articles_crawled']} 篇")
         print(f"   節省時間: {result1['duration'] - result2['duration']:.2f} 秒")
 
-    async def error_handling_demo(self, services: Dict[str, Any]):
+    async def error_handling_demo(self, services: dict[str, Any]):
         """錯誤處理示範"""
         print("\n🛡️ 錯誤處理示範")
         print("-" * 18)
@@ -179,19 +182,15 @@ class AdvancedCrawler:
         # 測試網路錯誤恢復
         print("測試服務降級（Redis 失效時降級到 JSON）...")
 
-        original_redis_url = services['config'].get("REDIS_URL")
+        original_redis_url = services["config"].get("REDIS_URL")
 
         try:
             # 暫時使用錯誤的 Redis URL 來模擬服務不可用
-            services['redis_client']._redis_url = "redis://invalid-host:6379"
+            services["redis_client"]._redis_url = "redis://invalid-host:6379"
 
             # 執行爬取，應該會自動降級到 JSON 狀態管理
-            result = await services['crawl_service'].crawl_board(
-                board="Stock",
-                category="心得",
-                pages=1,
-                incremental=True,
-                force=False
+            result = await services["crawl_service"].crawl_board(
+                board="Stock", category="心得", pages=1, incremental=True, force=False
             )
 
             print(f"   ✅ 服務降級成功，爬取 {result['articles_crawled']} 篇文章")
@@ -202,17 +201,16 @@ class AdvancedCrawler:
 
         finally:
             # 恢復原始 Redis URL
-            services['redis_client']._redis_url = original_redis_url
+            services["redis_client"]._redis_url = original_redis_url
 
-    async def data_analysis_demo(self, services: Dict[str, Any]):
+    async def data_analysis_demo(self, services: dict[str, Any]):
         """資料分析示範"""
         print("\n📈 資料分析示範")
         print("-" * 16)
 
         # 查詢最近的文章
-        articles = await services['article_repository'].get_articles_by_board(
-            board="Stock",
-            limit=50
+        articles = await services["article_repository"].get_articles_by_board(
+            board="Stock", limit=50
         )
 
         if not articles:
@@ -248,20 +246,19 @@ class AdvancedCrawler:
             avg_length = sum(content_lengths) / len(content_lengths)
             max_length = max(content_lengths)
             min_length = min(content_lengths)
-            print(f"\n   內容長度統計:")
+            print("\n   內容長度統計:")
             print(f"     平均: {avg_length:.0f} 字")
             print(f"     最長: {max_length} 字")
             print(f"     最短: {min_length} 字")
 
-    async def export_analysis_results(self, services: Dict[str, Any]):
+    async def export_analysis_results(self, services: dict[str, Any]):
         """匯出分析結果"""
         print("\n💾 匯出分析結果")
         print("-" * 16)
 
         # 查詢資料
-        articles = await services['article_repository'].get_articles_by_board(
-            board="Stock",
-            limit=100
+        articles = await services["article_repository"].get_articles_by_board(
+            board="Stock", limit=100
         )
 
         if not articles:
@@ -274,41 +271,53 @@ class AdvancedCrawler:
 
         # 匯出詳細 JSON
         import json
+
         detailed_data = []
         for article in articles:
-            detailed_data.append({
-                "id": article.id,
-                "title": article.title,
-                "author": article.author,
-                "category": article.category,
-                "board": article.board,
-                "content_length": len(article.content),
-                "content_summary": article.content[:200] + "..." if len(article.content) > 200 else article.content,
-                "publish_date": article.publish_date.isoformat(),
-                "crawl_date": article.crawl_date.isoformat(),
-                "keywords": services['parser_service'].extract_keywords(article.content, max_keywords=5)
-            })
+            detailed_data.append(
+                {
+                    "id": article.id,
+                    "title": article.title,
+                    "author": article.author,
+                    "category": article.category,
+                    "board": article.board,
+                    "content_length": len(article.content),
+                    "content_summary": article.content[:200] + "..."
+                    if len(article.content) > 200
+                    else article.content,
+                    "publish_date": article.publish_date.isoformat(),
+                    "crawl_date": article.crawl_date.isoformat(),
+                    "keywords": services["parser_service"].extract_keywords(
+                        article.content, max_keywords=5
+                    ),
+                }
+            )
 
-        json_file = output_dir / f"detailed_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(json_file, 'w', encoding='utf-8') as f:
+        json_file = (
+            output_dir / f"detailed_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        with open(json_file, "w", encoding="utf-8") as f:
             json.dump(detailed_data, f, ensure_ascii=False, indent=2)
 
         print(f"   ✅ JSON 匯出: {json_file}")
 
         # 匯出 CSV 摘要
         import csv
+
         csv_file = output_dir / f"summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(['標題', '作者', '分類', '內容長度', '發布時間'])
+            writer.writerow(["標題", "作者", "分類", "內容長度", "發布時間"])
             for article in articles:
-                writer.writerow([
-                    article.title,
-                    article.author,
-                    article.category or '無分類',
-                    len(article.content),
-                    article.publish_date.strftime('%Y-%m-%d %H:%M:%S')
-                ])
+                writer.writerow(
+                    [
+                        article.title,
+                        article.author,
+                        article.category or "無分類",
+                        len(article.content),
+                        article.publish_date.strftime("%Y-%m-%d %H:%M:%S"),
+                    ]
+                )
 
         print(f"   ✅ CSV 匯出: {csv_file}")
 
@@ -329,13 +338,13 @@ class AdvancedCrawler:
             for key, value in self.crawl_statistics.items():
                 print(f"  {key}: {value}")
 
-        total_articles = sum(v for k, v in self.crawl_statistics.items() if k.endswith('_articles'))
-        total_errors = sum(v for k, v in self.crawl_statistics.items() if k.endswith('_errors'))
+        total_articles = sum(v for k, v in self.crawl_statistics.items() if k.endswith("_articles"))
+        total_errors = sum(v for k, v in self.crawl_statistics.items() if k.endswith("_errors"))
 
         if total_articles > 0:
             success_rate = (total_articles - total_errors) / total_articles * 100
             articles_per_second = total_articles / total_time
-            print(f"\n總體效能:")
+            print("\n總體效能:")
             print(f"  爬取文章總數: {total_articles}")
             print(f"  錯誤總數: {total_errors}")
             print(f"  成功率: {success_rate:.1f}%")
@@ -368,10 +377,10 @@ class AdvancedCrawler:
         finally:
             # 清理資源
             if services:
-                if services['redis_client']:
-                    await services['redis_client'].close()
-                if services['article_repository']:
-                    await services['article_repository'].close()
+                if services["redis_client"]:
+                    await services["redis_client"].close()
+                if services["article_repository"]:
+                    await services["article_repository"].close()
 
             self.print_final_statistics()
             print("\n🎯 進階功能示範完成")
@@ -407,8 +416,8 @@ async def interactive_menu():
                 try:
                     await crawler.batch_crawl_categories(services)
                 finally:
-                    await services['redis_client'].close()
-                    await services['article_repository'].close()
+                    await services["redis_client"].close()
+                    await services["article_repository"].close()
                     crawler.print_final_statistics()
                 break
             elif choice == "3":
@@ -419,8 +428,8 @@ async def interactive_menu():
                 try:
                     await crawler.incremental_crawl_demo(services)
                 finally:
-                    await services['redis_client'].close()
-                    await services['article_repository'].close()
+                    await services["redis_client"].close()
+                    await services["article_repository"].close()
                     crawler.print_final_statistics()
                 break
             elif choice == "4":
@@ -432,8 +441,8 @@ async def interactive_menu():
                     await crawler.data_analysis_demo(services)
                     await crawler.export_analysis_results(services)
                 finally:
-                    await services['redis_client'].close()
-                    await services['article_repository'].close()
+                    await services["redis_client"].close()
+                    await services["article_repository"].close()
                     crawler.print_final_statistics()
                 break
             elif choice == "5":

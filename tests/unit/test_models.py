@@ -2,13 +2,11 @@
 
 Test data validation and serialization logic for Article, CrawlState, and Config models.
 """
-import pytest
 from datetime import datetime, timedelta
-from typing import List, Dict
 
 from src.models.article import Article
+from src.models.config import DEFAULT_CONFIG, Config, create_default_configs, validate_config_value
 from src.models.crawl_state import CrawlState, CrawlStatus
-from src.models.config import Config, DEFAULT_CONFIG, validate_config_value, create_default_configs
 
 
 class TestArticleModel:
@@ -49,9 +47,16 @@ class TestArticleModel:
 
         for url in valid_urls:
             article = Article(
-                id=1, title="Test", author="user", board="Stock", url=url,
-                content="test", publish_date=datetime.now(), crawl_date=datetime.now(),
-                created_at=datetime.now(), updated_at=datetime.now()
+                id=1,
+                title="Test",
+                author="user",
+                board="Stock",
+                url=url,
+                content="test",
+                publish_date=datetime.now(),
+                crawl_date=datetime.now(),
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
             )
             assert article.is_valid_ptt_url() is True
 
@@ -67,9 +72,16 @@ class TestArticleModel:
 
         for url in invalid_urls:
             article = Article(
-                id=1, title="Test", author="user", board="Stock", url=url,
-                content="test", publish_date=datetime.now(), crawl_date=datetime.now(),
-                created_at=datetime.now(), updated_at=datetime.now()
+                id=1,
+                title="Test",
+                author="user",
+                board="Stock",
+                url=url,
+                content="test",
+                publish_date=datetime.now(),
+                crawl_date=datetime.now(),
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
             )
             assert article.is_valid_ptt_url() is False
 
@@ -79,10 +91,16 @@ class TestArticleModel:
         past_date = now - timedelta(days=5)
 
         article = Article(
-            id=1, title="Test", author="user", board="Stock",
+            id=1,
+            title="Test",
+            author="user",
+            board="Stock",
             url="https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html",
-            content="test", publish_date=past_date, crawl_date=now,
-            created_at=now, updated_at=now
+            content="test",
+            publish_date=past_date,
+            crawl_date=now,
+            created_at=now,
+            updated_at=now,
         )
 
         age = article.get_age_in_days()
@@ -101,10 +119,17 @@ class TestArticleModel:
 
         for title, expected_category in test_cases:
             article = Article(
-                id=1, title=title, author="user", board="Stock",
+                id=1,
+                title=title,
+                author="user",
+                board="Stock",
                 url="https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html",
-                content="test", publish_date=datetime.now(), crawl_date=datetime.now(),
-                created_at=datetime.now(), updated_at=datetime.now(), category=None
+                content="test",
+                publish_date=datetime.now(),
+                crawl_date=datetime.now(),
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+                category=None,
             )
 
             extracted = article.extract_category_from_title()
@@ -114,10 +139,16 @@ class TestArticleModel:
         """Test getting article content summary."""
         long_content = "這是一個很長的文章內容。" * 50
         article = Article(
-            id=1, title="Test", author="user", board="Stock",
+            id=1,
+            title="Test",
+            author="user",
+            board="Stock",
             url="https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html",
-            content=long_content, publish_date=datetime.now(), crawl_date=datetime.now(),
-            created_at=datetime.now(), updated_at=datetime.now()
+            content=long_content,
+            publish_date=datetime.now(),
+            crawl_date=datetime.now(),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         summary = article.get_summary(max_length=50)
@@ -133,10 +164,17 @@ class TestArticleModel:
         """Test converting article to dictionary."""
         now = datetime.now()
         article = Article(
-            id=1, title="Test", author="user", board="Stock",
+            id=1,
+            title="Test",
+            author="user",
+            board="Stock",
             url="https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html",
-            content="test", publish_date=now, crawl_date=now,
-            category="心得", created_at=now, updated_at=now
+            content="test",
+            publish_date=now,
+            crawl_date=now,
+            category="心得",
+            created_at=now,
+            updated_at=now,
         )
 
         article_dict = article.to_dict()
@@ -184,10 +222,18 @@ class TestCrawlStateModel:
 
         # Valid state
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=now, last_page_crawled=1,
-            processed_urls=[], failed_urls=[], retry_count=0, max_retries=3,
-            status=CrawlStatus.IDLE, error_message=None,
-            created_at=now, updated_at=now
+            id=1,
+            board="Stock",
+            last_crawl_time=now,
+            last_page_crawled=1,
+            processed_urls=[],
+            failed_urls=[],
+            retry_count=0,
+            max_retries=3,
+            status=CrawlStatus.IDLE,
+            error_message=None,
+            created_at=now,
+            updated_at=now,
         )
         assert state.is_valid()
 
@@ -208,10 +254,18 @@ class TestCrawlStateModel:
     def test_crawl_state_add_processed_url(self):
         """Test adding processed URLs."""
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
-            processed_urls=[], failed_urls=[], retry_count=0, max_retries=3,
-            status=CrawlStatus.IDLE, error_message=None,
-            created_at=datetime.now(), updated_at=datetime.now()
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
+            processed_urls=[],
+            failed_urls=[],
+            retry_count=0,
+            max_retries=3,
+            status=CrawlStatus.IDLE,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
@@ -227,10 +281,18 @@ class TestCrawlStateModel:
     def test_crawl_state_add_failed_url(self):
         """Test adding failed URLs."""
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
-            processed_urls=[], failed_urls=[], retry_count=0, max_retries=3,
-            status=CrawlStatus.IDLE, error_message=None,
-            created_at=datetime.now(), updated_at=datetime.now()
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
+            processed_urls=[],
+            failed_urls=[],
+            retry_count=0,
+            max_retries=3,
+            status=CrawlStatus.IDLE,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         url = "https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html"
@@ -242,11 +304,18 @@ class TestCrawlStateModel:
     def test_crawl_state_get_success_rate(self):
         """Test calculating success rate."""
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
             processed_urls=["url1", "url2", "url3", "url4"],
             failed_urls=["url5"],
-            retry_count=0, max_retries=3, status=CrawlStatus.COMPLETED,
-            error_message=None, created_at=datetime.now(), updated_at=datetime.now()
+            retry_count=0,
+            max_retries=3,
+            status=CrawlStatus.COMPLETED,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         success_rate = state.get_success_rate()
@@ -261,10 +330,18 @@ class TestCrawlStateModel:
     def test_crawl_state_is_url_processed(self):
         """Test checking if URL is processed."""
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
-            processed_urls=["url1", "url2"], failed_urls=[],
-            retry_count=0, max_retries=3, status=CrawlStatus.COMPLETED,
-            error_message=None, created_at=datetime.now(), updated_at=datetime.now()
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
+            processed_urls=["url1", "url2"],
+            failed_urls=[],
+            retry_count=0,
+            max_retries=3,
+            status=CrawlStatus.COMPLETED,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         assert state.is_url_processed("url1") is True
@@ -273,10 +350,18 @@ class TestCrawlStateModel:
     def test_crawl_state_can_retry(self):
         """Test retry capability check."""
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
-            processed_urls=[], failed_urls=[], retry_count=2, max_retries=3,
-            status=CrawlStatus.ERROR, error_message="Test error",
-            created_at=datetime.now(), updated_at=datetime.now()
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
+            processed_urls=[],
+            failed_urls=[],
+            retry_count=2,
+            max_retries=3,
+            status=CrawlStatus.ERROR,
+            error_message="Test error",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         assert state.can_retry() is True
@@ -293,11 +378,18 @@ class TestCrawlStateModel:
     def test_crawl_state_get_statistics(self):
         """Test getting crawl statistics."""
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=5,
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=5,
             processed_urls=["url1", "url2", "url3"],
             failed_urls=["url4"],
-            retry_count=1, max_retries=3, status=CrawlStatus.COMPLETED,
-            error_message=None, created_at=datetime.now(), updated_at=datetime.now()
+            retry_count=1,
+            max_retries=3,
+            status=CrawlStatus.COMPLETED,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         stats = state.get_statistics()
@@ -333,8 +425,7 @@ class TestConfigModel:
 
         # Valid config
         config = Config(
-            key="valid.key", value="valid_value", description="Test",
-            created_at=now, updated_at=now
+            key="valid.key", value="valid_value", description="Test", created_at=now, updated_at=now
         )
         assert config.is_valid()
 
@@ -357,8 +448,7 @@ class TestConfigModel:
 
         # Integer value
         config = Config(
-            key="int.value", value="42", description="Test",
-            created_at=now, updated_at=now
+            key="int.value", value="42", description="Test", created_at=now, updated_at=now
         )
         assert config.get_typed_value(int) == 42
 
@@ -383,8 +473,11 @@ class TestConfigModel:
         """Test checking if value is valid JSON."""
         now = datetime.now()
         config = Config(
-            key="test.key", value='{"key": "value"}', description="Test",
-            created_at=now, updated_at=now
+            key="test.key",
+            value='{"key": "value"}',
+            description="Test",
+            created_at=now,
+            updated_at=now,
         )
         assert config.is_json_value() is True
 
@@ -442,8 +535,7 @@ class TestConfigModel:
         # Very long key
         long_key = "a" * 300
         config = Config(
-            key=long_key, value="value", description="Test",
-            created_at=now, updated_at=now
+            key=long_key, value="value", description="Test", created_at=now, updated_at=now
         )
         assert not config.is_valid()  # Should fail due to length
 
@@ -462,8 +554,11 @@ class TestConfigModel:
         """Test config serialization to dict."""
         now = datetime.now()
         config = Config(
-            key="test.key", value="test_value", description="Test config",
-            created_at=now, updated_at=now
+            key="test.key",
+            value="test_value",
+            description="Test config",
+            created_at=now,
+            updated_at=now,
         )
 
         config_dict = {
@@ -487,18 +582,32 @@ class TestModelIntegration:
         """Test integration between Article and CrawlState models."""
         # Create article
         article = Article(
-            id=1, title="[心得] Test", author="user", board="Stock",
+            id=1,
+            title="[心得] Test",
+            author="user",
+            board="Stock",
             url="https://www.ptt.cc/bbs/Stock/M.1234567890.A.123.html",
-            content="test", publish_date=datetime.now(), crawl_date=datetime.now(),
-            created_at=datetime.now(), updated_at=datetime.now()
+            content="test",
+            publish_date=datetime.now(),
+            crawl_date=datetime.now(),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         # Create crawl state
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
-            processed_urls=[], failed_urls=[], retry_count=0, max_retries=3,
-            status=CrawlStatus.CRAWLING, error_message=None,
-            created_at=datetime.now(), updated_at=datetime.now()
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
+            processed_urls=[],
+            failed_urls=[],
+            retry_count=0,
+            max_retries=3,
+            status=CrawlStatus.CRAWLING,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         # Test adding article URL to state
@@ -510,18 +619,29 @@ class TestModelIntegration:
         """Test config values that affect model validation."""
         # Config for retry settings
         retry_config = Config(
-            key="crawl.max_retries", value="5", description="Max retries",
-            created_at=datetime.now(), updated_at=datetime.now()
+            key="crawl.max_retries",
+            value="5",
+            description="Max retries",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         max_retries = retry_config.get_typed_value(int)
 
         # Use in CrawlState
         state = CrawlState(
-            id=1, board="Stock", last_crawl_time=datetime.now(), last_page_crawled=1,
-            processed_urls=[], failed_urls=[], retry_count=0, max_retries=max_retries,
-            status=CrawlStatus.IDLE, error_message=None,
-            created_at=datetime.now(), updated_at=datetime.now()
+            id=1,
+            board="Stock",
+            last_crawl_time=datetime.now(),
+            last_page_crawled=1,
+            processed_urls=[],
+            failed_urls=[],
+            retry_count=0,
+            max_retries=max_retries,
+            status=CrawlStatus.IDLE,
+            error_message=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
 
         assert state.max_retries == 5

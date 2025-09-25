@@ -2,10 +2,10 @@
 
 This module implements PTT article content parsing logic.
 """
-import re
 import logging
+import re
 from datetime import datetime
-from typing import Dict, Optional, Any, List
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,9 @@ class ParserService:
 
         logger.info("PTT 解析服務初始化完成")
 
-    async def parse_article(self, response_data: Dict[str, Any], url: str) -> Optional[Dict[str, Any]]:
+    async def parse_article(
+        self, response_data: dict[str, Any], url: str
+    ) -> Optional[dict[str, Any]]:
         """
         解析 PTT 文章資料.
 
@@ -117,7 +119,7 @@ class ParserService:
         match = re.search(r"/bbs/([^/]+)/", url)
         return match.group(1) if match else "Unknown"
 
-    def _parse_title(self, content: str, metadata: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    def _parse_title(self, content: str, metadata: dict[str, Any]) -> Optional[dict[str, str]]:
         """解析文章標題和分類."""
         # 優先使用 metadata
         if "title" in metadata:
@@ -180,7 +182,7 @@ class ParserService:
 
         return None
 
-    def _parse_author(self, content: str, metadata: Dict[str, Any]) -> Optional[str]:
+    def _parse_author(self, content: str, metadata: dict[str, Any]) -> Optional[str]:
         """解析文章作者."""
         # 優先使用 metadata
         if "author" in metadata:
@@ -198,7 +200,7 @@ class ParserService:
 
         return None
 
-    def _parse_publish_date(self, content: str, metadata: Dict[str, Any]) -> Optional[datetime]:
+    def _parse_publish_date(self, content: str, metadata: dict[str, Any]) -> Optional[datetime]:
         """解析文章發布時間."""
         # 優先使用 metadata
         if "publishTime" in metadata:
@@ -225,11 +227,11 @@ class ParserService:
         # 常見的時間格式
         time_formats = [
             "%a %b %d %H:%M:%S %Y",  # Mon Jan 01 12:00:00 2024
-            "%Y/%m/%d %H:%M:%S",     # 2024/01/01 12:00:00
-            "%m/%d/%Y %H:%M:%S",     # 01/01/2024 12:00:00
-            "%Y-%m-%d %H:%M:%S",     # 2024-01-01 12:00:00
-            "%d/%m/%Y %H:%M",        # 01/01/2024 12:00
-            "%Y/%m/%d",              # 2024/01/01
+            "%Y/%m/%d %H:%M:%S",  # 2024/01/01 12:00:00
+            "%m/%d/%Y %H:%M:%S",  # 01/01/2024 12:00:00
+            "%Y-%m-%d %H:%M:%S",  # 2024-01-01 12:00:00
+            "%d/%m/%Y %H:%M",  # 01/01/2024 12:00
+            "%Y/%m/%d",  # 2024/01/01
         ]
 
         for fmt in time_formats:
@@ -264,9 +266,11 @@ class ParserService:
             # 如果在推文區塊中，跳過
             if in_comments:
                 # 檢查是否為推文相關行
-                if (line.strip() and
-                    not any(re.match(pattern, line) for pattern in self.comment_patterns) and
-                    not re.match(r"^\d{2}/\d{2}\s+\d{2}:\d{2}$", line.strip())):
+                if (
+                    line.strip()
+                    and not any(re.match(pattern, line) for pattern in self.comment_patterns)
+                    and not re.match(r"^\d{2}/\d{2}\s+\d{2}:\d{2}$", line.strip())
+                ):
                     # 可能推文結束了
                     in_comments = False
                     cleaned_lines.append(line)
@@ -278,12 +282,12 @@ class ParserService:
 
         # 標準化換行和空白
         content = re.sub(r"\n{3,}", "\n\n", content)  # 最多兩個連續換行
-        content = re.sub(r"[ \t]+", " ", content)     # 多個空格合併為一個
+        content = re.sub(r"[ \t]+", " ", content)  # 多個空格合併為一個
         content = content.strip()
 
         return content
 
-    def parse_board_page(self, response_data: Dict[str, Any]) -> List[Dict[str, str]]:
+    def parse_board_page(self, response_data: dict[str, Any]) -> list[dict[str, str]]:
         """
         解析看板頁面，提取文章連結.
 
@@ -351,7 +355,7 @@ class ParserService:
             logger.error(f"解析看板頁面失敗: {e}")
             return []
 
-    def validate_article_data(self, article_data: Dict[str, Any]) -> bool:
+    def validate_article_data(self, article_data: dict[str, Any]) -> bool:
         """驗證文章資料完整性."""
         required_fields = ["title", "author", "content"]
 
@@ -373,7 +377,7 @@ class ParserService:
 
         return True
 
-    def extract_keywords(self, content: str, max_keywords: int = 10) -> List[str]:
+    def extract_keywords(self, content: str, max_keywords: int = 10) -> list[str]:
         """從文章內容中提取關鍵字."""
         if not content:
             return []
@@ -386,15 +390,57 @@ class ParserService:
 
         # 過濾停用詞和短詞
         stop_words = {
-            "的", "是", "在", "有", "和", "或", "但", "如果", "因為", "所以", "這", "那",
-            "了", "我", "你", "他", "她", "它", "們", "都", "也", "就", "會", "能", "要",
-            "不", "沒", "很", "更", "最", "比", "從", "到", "與", "及", "以", "for",
-            "the", "and", "or", "but", "if", "then", "this", "that", "with", "from"
+            "的",
+            "是",
+            "在",
+            "有",
+            "和",
+            "或",
+            "但",
+            "如果",
+            "因為",
+            "所以",
+            "這",
+            "那",
+            "了",
+            "我",
+            "你",
+            "他",
+            "她",
+            "它",
+            "們",
+            "都",
+            "也",
+            "就",
+            "會",
+            "能",
+            "要",
+            "不",
+            "沒",
+            "很",
+            "更",
+            "最",
+            "比",
+            "從",
+            "到",
+            "與",
+            "及",
+            "以",
+            "for",
+            "the",
+            "and",
+            "or",
+            "but",
+            "if",
+            "then",
+            "this",
+            "that",
+            "with",
+            "from",
         }
 
         filtered_words = [
-            word.lower() for word in words
-            if len(word) > 1 and word.lower() not in stop_words
+            word.lower() for word in words if len(word) > 1 and word.lower() not in stop_words
         ]
 
         # 計算詞頻
@@ -420,7 +466,7 @@ class ParserService:
         # 在句號、問號、驚嘆號處截斷
         for i in range(max_length, max_length // 2, -1):
             if i < len(clean_content) and clean_content[i] in "。？！.?!":
-                return clean_content[:i + 1]
+                return clean_content[: i + 1]
 
         # 找不到合適的截斷點，直接截斷並加省略號
         return clean_content[:max_length].rstrip() + "..."

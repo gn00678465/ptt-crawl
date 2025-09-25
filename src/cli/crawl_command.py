@@ -7,13 +7,13 @@ from typing import Optional
 
 import typer
 
-from ..lib.console import safe_echo
+from ..database.article_repository import ArticleRepository
 from ..lib.config_loader import ConfigLoader
+from ..lib.console import safe_echo
 from ..lib.redis_client import RedisClient
 from ..services.crawl_service import CrawlService
-from ..services.state_service import StateService
 from ..services.parser_service import ParserService
-from ..database.article_repository import ArticleRepository
+from ..services.state_service import StateService
 
 logger = logging.getLogger(__name__)
 
@@ -39,18 +39,20 @@ def crawl(
 
     try:
         # Run the async crawl operation
-        result = asyncio.run(_async_crawl(
-            board=board,
-            category=category,
-            pages=pages,
-            output=output,
-            output_file=output_file,
-            force=force,
-            incremental=incremental
-        ))
+        result = asyncio.run(
+            _async_crawl(
+                board=board,
+                category=category,
+                pages=pages,
+                output=output,
+                output_file=output_file,
+                force=force,
+                incremental=incremental,
+            )
+        )
 
         # Display results
-        safe_echo(f"[SUCCESS] Crawl completed successfully")
+        safe_echo("[SUCCESS] Crawl completed successfully")
         safe_echo(f"[STATS] Articles processed: {result.get('articles_crawled', 0)}")
         safe_echo(f"[STATS] Articles saved: {result.get('articles_saved', 0)}")
         safe_echo(f"[STATS] Errors: {result.get('errors_count', 0)}")
@@ -61,7 +63,7 @@ def crawl(
             safe_echo(f"[OUTPUT] Results saved to: {output_file}")
 
     except Exception as e:
-        safe_echo(f"[ERROR] Crawl failed: {str(e)}")
+        safe_echo(f"[ERROR] Crawl failed: {e!s}")
         logger.error(f"Crawl command failed: {e}")
         raise typer.Exit(1)
 
@@ -73,7 +75,7 @@ async def _async_crawl(
     output: str,
     output_file: Optional[Path],
     force: bool,
-    incremental: bool
+    incremental: bool,
 ):
     """Async helper function to handle crawl operations."""
     # Load configuration
@@ -82,9 +84,7 @@ async def _async_crawl(
 
     # Initialize services
     redis_client = RedisClient(
-        url=config.get("REDIS_URL", "redis://localhost:6379"),
-        retry_attempts=3,
-        retry_delay=1.0
+        url=config.get("REDIS_URL", "redis://localhost:6379"), retry_attempts=3, retry_delay=1.0
     )
 
     state_service = StateService(redis_client=redis_client)
@@ -92,8 +92,7 @@ async def _async_crawl(
 
     article_repository = ArticleRepository(
         connection_string=config.get(
-            "DATABASE_URL",
-            "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
+            "DATABASE_URL", "postgresql://ptt_user:password@localhost:5432/ptt_crawler"
         )
     )
 
@@ -102,17 +101,13 @@ async def _async_crawl(
         parser_service=parser_service,
         article_repository=article_repository,
         firecrawl_api_url=config.get("FIRECRAWL_API_URL", "http://localhost:3002"),
-        firecrawl_api_key=config.get("FIRECRAWL_API_KEY")
+        firecrawl_api_key=config.get("FIRECRAWL_API_KEY"),
     )
 
     try:
         # Execute the crawl
         result = await crawl_service.crawl_board(
-            board=board,
-            category=category,
-            pages=pages,
-            incremental=incremental,
-            force=force
+            board=board, category=category, pages=pages, incremental=incremental, force=force
         )
 
         # Handle output file if specified
@@ -129,7 +124,9 @@ async def _async_crawl(
             await article_repository.close()
 
 
-async def _export_results(result, output_format: str, output_file: Path, article_repository: ArticleRepository, board: str):
+async def _export_results(
+    result, output_format: str, output_file: Path, article_repository: ArticleRepository, board: str
+):
     """Export crawl results to file."""
     try:
         if output_format == "json":
@@ -141,10 +138,14 @@ async def _export_results(result, output_format: str, output_file: Path, article
         safe_echo(f"[WARNING] Export failed: {e}")
 
 
-async def _export_to_json(result, output_file: Path, article_repository: ArticleRepository, board: str):
+async def _export_to_json(
+    result, output_file: Path, article_repository: ArticleRepository, board: str
+):
     """Export results to JSON file."""
     # Get recent articles for this board
-    articles = await article_repository.get_articles_by_board(board=board, limit=result.get('articles_saved', 100))
+    articles = await article_repository.get_articles_by_board(
+        board=board, limit=result.get("articles_saved", 100)
+    )
 
     export_data = {
         "crawl_summary": {
@@ -154,7 +155,7 @@ async def _export_to_json(result, output_file: Path, article_repository: Article
             "articles_saved": result.get("articles_saved", 0),
             "errors_count": result.get("errors_count", 0),
             "duration": result.get("duration", 0),
-            "timestamp": result.get("start_time")
+            "timestamp": result.get("start_time"),
         },
         "articles": [
             {
@@ -162,46 +163,63 @@ async def _export_to_json(result, output_file: Path, article_repository: Article
                 "title": article.title,
                 "author": article.author,
                 "category": article.category,
-                "content": article.content[:500] + "..." if len(article.content) > 500 else article.content,
+                "content": article.content[:500] + "..."
+                if len(article.content) > 500
+                else article.content,
                 "publish_date": article.publish_date.isoformat() if article.publish_date else None,
                 "crawl_date": article.crawl_date.isoformat() if article.crawl_date else None,
                 "board": article.board,
-                "url": article.url
+                "url": article.url,
             }
             for article in articles
-        ]
+        ],
     }
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(export_data, f, ensure_ascii=False, indent=2)
 
 
-async def _export_to_csv(result, output_file: Path, article_repository: ArticleRepository, board: str):
+async def _export_to_csv(
+    result, output_file: Path, article_repository: ArticleRepository, board: str
+):
     """Export results to CSV file."""
     import csv
 
     # Get recent articles for this board
-    articles = await article_repository.get_articles_by_board(board=board, limit=result.get('articles_saved', 100))
+    articles = await article_repository.get_articles_by_board(
+        board=board, limit=result.get("articles_saved", 100)
+    )
 
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
 
         # Write header
-        writer.writerow([
-            'ID', 'Title', 'Author', 'Category', 'Board', 'URL',
-            'Publish Date', 'Crawl Date', 'Content Length'
-        ])
+        writer.writerow(
+            [
+                "ID",
+                "Title",
+                "Author",
+                "Category",
+                "Board",
+                "URL",
+                "Publish Date",
+                "Crawl Date",
+                "Content Length",
+            ]
+        )
 
         # Write article data
         for article in articles:
-            writer.writerow([
-                article.id,
-                article.title,
-                article.author,
-                article.category or '',
-                article.board,
-                article.url,
-                article.publish_date.isoformat() if article.publish_date else '',
-                article.crawl_date.isoformat() if article.crawl_date else '',
-                len(article.content)
-            ])
+            writer.writerow(
+                [
+                    article.id,
+                    article.title,
+                    article.author,
+                    article.category or "",
+                    article.board,
+                    article.url,
+                    article.publish_date.isoformat() if article.publish_date else "",
+                    article.crawl_date.isoformat() if article.crawl_date else "",
+                    len(article.content),
+                ]
+            )
