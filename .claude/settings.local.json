@@ -9,7 +9,10 @@
       "Bash(uv run:*)",
       "Bash(pip install:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(uv install:*)",
+      "Bash(uv sync:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

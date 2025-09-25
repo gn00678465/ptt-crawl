@@ -49,45 +49,52 @@
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
 ### Data Models
-- [ ] T011 [P] Article 模型：在 `src/models/article.py` 實作 Article 資料類別和驗證邏輯
-- [ ] T012 [P] CrawlState 模型：在 `src/models/crawl_state.py` 實作 CrawlState 資料類別和狀態枚舉
-- [ ] T013 [P] Config 模型：在 `src/models/config.py` 實作 Config 資料類別和預設配置
+- [x] T011 [P] Article 模型：在 `src/models/article.py` 實作 Article 資料類別和驗證邏輯
+- [x] T012 [P] CrawlState 模型：在 `src/models/crawl_state.py` 實作 CrawlState 資料類別和狀態枚舉
+- [x] T013 [P] Config 模型：在 `src/models/config.py` 實作 Config 資料類別和預設配置
 
 ### Database Layer
-- [ ] T014 [P] 資料庫初始化：在 `src/database/init.py` 實作 DDL 腳本和資料庫結構建立
-- [ ] T015 [P] Article 資料庫操作：在 `src/database/article_repository.py` 實作 insert/query/update/exists 方法
-- [ ] T016 [P] CrawlState 資料庫操作：在 `src/database/crawl_state_repository.py` 實作狀態管理和 URL 追蹤
-- [ ] T017 [P] Config 資料庫操作：在 `src/database/config_repository.py` 實作配置儲存和讀取
+- [x] T014 [P] 資料庫初始化：在 `src/database/init.py` 實作 DDL 腳本和資料庫結構建立
+- [x] T015 [P] Article 資料庫操作：在 `src/database/article_repository.py` 實作 insert/query/update/exists 方法
+- [x] T016 [P] CrawlState 資料庫操作：在 `src/database/crawl_state_repository.py` 實作狀態管理和 URL 追蹤
+- [x] T017 [P] Config 資料庫操作：在 `src/database/config_repository.py` 實作配置儲存和讀取
 
 ### Services
-- [ ] T018 爬取服務：在 `src/services/crawl_service.py` 實作兩階段爬取邏輯（文章列表→內容）
-- [ ] T019 Firecrawl 整合服務：在 `src/services/firecrawl_service.py` 實作 API 調用、重試機制和內容解析
-- [ ] T020 狀態管理服務：在 `src/services/state_service.py` 實作 Redis + JSON 雙層狀態管理
-- [ ] T021 內容解析服務：在 `src/services/parser_service.py` 實作 PTT 文章標題/作者/內容解析
+- [x] T018 爬取服務：在 `src/services/crawl_service.py` 實作兩階段爬取邏輯（文章列表→內容）
+- [x] T019 Firecrawl 整合服務：在 `src/services/firecrawl_service.py` 實作 API 調用、重試機制和內容解析
+- [x] T020 狀態管理服務：在 `src/services/state_service.py` 實作 Redis + JSON 雙層狀態管理
+- [x] T021 內容解析服務：在 `src/services/parser_service.py` 實作 PTT 文章標題/作者/內容解析
 
 ### CLI Commands
-- [ ] T022 CLI 主程式：在 `src/cli/main.py` 實作 typer 應用程式和全域選項
-- [ ] T023 [P] 爬取命令：在 `src/cli/crawl_command.py` 實作 crawl 命令和參數驗證
-- [ ] T024 [P] 狀態命令：在 `src/cli/status_command.py` 實作 status 命令和格式化輸出
-- [ ] T025 [P] 配置命令：在 `src/cli/config_command.py` 實作 config show/set/reset 子命令
-- [ ] T026 [P] 清理命令：在 `src/cli/clean_command.py` 實作 clean 命令和確認機制
+- [x] T022 CLI 主程式：在 `src/cli/main.py` 實作 typer 應用程式和全域選項
+- [x] T023 [P] 爬取命令：在 `src/cli/crawl_command.py` 實作 crawl 命令和參數驗證
+- [x] T024 [P] 狀態命令：在 `src/cli/status_command.py` 實作 status 命令和格式化輸出
+- [x] T025 [P] 配置命令：在 `src/cli/config_command.py` 實作 config show/set/reset 子命令
+- [x] T026 [P] 清理命令：在 `src/cli/clean_command.py` 實作 clean 命令和確認機制
 
 ## Phase 3.4: Integration
-- [ ] T027 資料庫連線管理：在 `src/database/connection.py` 實作 asyncpg 連線池和交易管理
-- [ ] T028 Redis 連線管理：在 `src/lib/redis_client.py` 實作 Redis 連線和故障切換
-- [ ] T029 配置載入器：在 `src/lib/config_loader.py` 實作環境變數和配置檔案載入
-- [ ] T030 日誌設定：在 `src/lib/logging.py` 實作日誌格式化和檔案輪轉
-- [ ] T031 錯誤處理中介層：在 `src/lib/error_handler.py` 實作統一錯誤處理和使用者友善訊息
+- [x] T027 資料庫連線管理：在 `src/database/connection.py` 實作 asyncpg 連線池和交易管理
+- [x] T028 Redis 連線管理：在 `src/lib/redis_client.py` 實作 Redis 連線和故障切換
+- [x] T029 配置載入器：在 `src/lib/config_loader.py` 實作環境變數和配置檔案載入
+- [x] T030 日誌設定：在 `src/lib/logging.py` 實作日誌格式化和檔案輪轉
+- [x] T031 錯誤處理中介層：在 `src/lib/error_handler.py` 實作統一錯誤處理和使用者友善訊息
 
 ## Phase 3.5: Polish
-- [ ] T032 [P] 模型單元測試：在 `tests/unit/test_models.py` 測試資料驗證和序列化
-- [ ] T033 [P] 解析器單元測試：在 `tests/unit/test_parser.py` 測試 PTT 內容解析邏輯
-- [ ] T034 [P] 服務單元測試：在 `tests/unit/test_services.py` 測試業務邏輯和邊界條件
-- [ ] T035 [P] CLI 單元測試：在 `tests/unit/test_cli.py` 測試命令參數和輸出格式
-- [ ] T036 效能測試：在 `tests/performance/test_crawl_performance.py` 驗證爬取速度和記憶體使用
-- [ ] T037 [P] 更新文件：更新 README.md 包含安裝、使用和 API 說明
-- [ ] T038 [P] 範例腳本：建立 `examples/` 目錄包含基本使用範例
-- [ ] T039 執行快速開始驗證：依照 `quickstart.md` 步驟驗證完整安裝和使用流程
+- [x] T032 [P] 模型單元測試：在 `tests/unit/test_models.py` 測試資料驗證和序列化
+- [x] T033 [P] 解析器單元測試：在 `tests/unit/test_parser.py` 測試 PTT 內容解析邏輯
+- [x] T034 [P] 服務單元測試：在 `tests/unit/test_services.py` 測試業務邏輯和邊界條件
+- [x] T035 [P] CLI 單元測試：在 `tests/unit/test_cli.py` 測試命令參數和輸出格式
+- [x] T036 效能測試：在 `tests/performance/test_crawl_performance.py` 驗證爬取速度和記憶體使用
+- [x] T037 [P] 更新文件：更新 README.md 包含安裝、使用和 API 說明
+- [x] T038 [P] 範例腳本：建立 `examples/` 目錄包含基本使用範例
+- [x] T039 執行快速開始驗證：依照 `quickstart.md` 步驟驗證完整安裝和使用流程
+
+## Additional Implementation (CLI Command Service Integration)
+- [x] T040 CLI 命令服務連接：完成所有 CLI 命令與對應服務層的連接
+  - [x] crawl 命令連接到 CrawlService，支援完整兩階段爬取流程
+  - [x] status 命令連接到系統狀態監控，支援詳細系統健康檢查
+  - [x] config 命令連接到 ConfigLoader，支援配置顯示、設定和重置
+  - [x] clean 命令連接到清理服務，支援狀態、快取和日誌清理
 
 ## Dependencies
 - Setup (T001-T003) before everything
