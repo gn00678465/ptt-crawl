@@ -28,23 +28,23 @@
 - Include exact file paths in descriptions
 
 ## Phase 3.1: Setup
-- [ ] T001 建立專案結構：建立 `src/`, `tests/`, `logs/` 目錄結構
-- [ ] T002 初始化 Python 專案：使用 uv 建立 `pyproject.toml` 並安裝 typer, firecrawl-py, psycopg2-binary, redis 依賴
-- [ ] T003 [P] 配置開發工具：設定 ruff（linting）、pytest（testing）和 pre-commit hooks
+- [x] T001 建立專案結構：建立 `src/`, `tests/`, `logs/` 目錄結構
+- [x] T002 初始化 Python 專案：使用 uv 建立 `pyproject.toml` 並安裝 typer, firecrawl-py, psycopg2-binary, redis 依賴
+- [x] T003 [P] 配置開發工具：設定 ruff（linting）、pytest（testing）和 pre-commit hooks
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests
-- [ ] T004 [P] CLI 合約測試：在 `tests/contract/test_cli_interface.py` 測試 crawl、status、config 命令介面
-- [ ] T005 [P] 資料庫合約測試：在 `tests/contract/test_database.py` 測試 Article/CrawlState/Config CRUD 操作
-- [ ] T006 [P] Firecrawl API 合約測試：在 `tests/contract/test_firecrawl_api.py` 測試 scrape 端點和錯誤處理
+- [x] T004 [P] CLI 合約測試：在 `tests/contract/test_cli_interface.py` 測試 crawl、status、config 命令介面
+- [x] T005 [P] 資料庫合約測試：在 `tests/contract/test_database.py` 測試 Article/CrawlState/Config CRUD 操作
+- [x] T006 [P] Firecrawl API 合約測試：在 `tests/contract/test_firecrawl_api.py` 測試 scrape 端點和錯誤處理
 
-### Integration Tests  
-- [ ] T007 [P] 完整爬取流程測試：在 `tests/integration/test_crawl_workflow.py` 測試從 PTT 頁面到資料庫儲存的完整流程
-- [ ] T008 [P] 增量爬取測試：在 `tests/integration/test_incremental_crawl.py` 測試狀態管理和避免重複爬取
-- [ ] T009 [P] 錯誤恢復測試：在 `tests/integration/test_error_recovery.py` 測試網路錯誤、API 錯誤和狀態恢復
-- [ ] T010 [P] 配置管理測試：在 `tests/integration/test_config_management.py` 測試配置讀取、設定和驗證
+### Integration Tests
+- [x] T007 [P] 完整爬取流程測試：在 `tests/integration/test_crawl_workflow.py` 測試從 PTT 頁面到資料庫儲存的完整流程
+- [x] T008 [P] 增量爬取測試：在 `tests/integration/test_incremental_crawl.py` 測試狀態管理和避免重複爬取
+- [x] T009 [P] 錯誤恢復測試：在 `tests/integration/test_error_recovery.py` 測試網路錯誤、API 錯誤和狀態恢復
+- [x] T010 [P] 配置管理測試：在 `tests/integration/test_config_management.py` 測試配置讀取、設定和驗證
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
@@ -92,7 +92,7 @@
 ## Dependencies
 - Setup (T001-T003) before everything
 - Contract tests (T004-T006) before implementation (T011+)
-- Integration tests (T007-T010) before implementation (T011+)  
+- Integration tests (T007-T010) before implementation (T011+)
 - Models (T011-T013) before repositories (T014-T017)
 - Repositories (T014-T017) before services (T018-T021)
 - Services (T018-T021) before CLI commands (T022-T026)
@@ -101,7 +101,7 @@
 
 **Critical TDD Dependencies:**
 - T018 (crawl_service) requires T004, T005, T006, T007 to be failing
-- T019 (firecrawl_service) requires T006 to be failing  
+- T019 (firecrawl_service) requires T006 to be failing
 - T015-T017 (repositories) require T005 to be failing
 - T023-T026 (CLI commands) require T004 to be failing
 
@@ -109,7 +109,7 @@
 ```
 # Launch contract tests together (Phase 3.2):
 Task: "CLI 合約測試：在 tests/contract/test_cli_interface.py 測試 crawl、status、config 命令介面"
-Task: "資料庫合約測試：在 tests/contract/test_database.py 測試 Article/CrawlState/Config CRUD 操作"  
+Task: "資料庫合約測試：在 tests/contract/test_database.py 測試 Article/CrawlState/Config CRUD 操作"
 Task: "Firecrawl API 合約測試：在 tests/contract/test_firecrawl_api.py 測試 scrape 端點和錯誤處理"
 
 # Launch model creation together (Phase 3.3):
@@ -146,7 +146,7 @@ Task: "Config 模型：在 src/models/config.py 實作 Config 資料類別和預
 *GATE: Checked by main() before returning*
 
 - [x] All contracts have corresponding tests (T004-T006)
-- [x] All entities have model tasks (T011-T013)  
+- [x] All entities have model tasks (T011-T013)
 - [x] All tests come before implementation (T004-T010 before T011+)
 - [x] Parallel tasks truly independent (different files)
 - [x] Each task specifies exact file path

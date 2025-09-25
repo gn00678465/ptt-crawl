@@ -1,0 +1,56 @@
+[project]
+name = "ptt-crawler"
+version = "0.1.0"
+description = "PTT Stock 板爬蟲工具，支援依分類篩選文章並使用 Firecrawl API 爬取內容"
+requires-python = ">=3.11"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "firecrawl-py>=4.3.6",
+    "psycopg2-binary>=2.9.10",
+    "python-dotenv>=1.1.1",
+    "redis>=6.4.0",
+    "typer>=0.19.2",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-mock>=3.15.1",
+    "ruff>=0.13.1",
+]
+
+[project.scripts]
+ptt-crawler = "src.cli.main:app"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = ["E", "F", "W", "I", "N", "UP", "ANN", "S", "B", "A", "C4", "DTZ", "T10", "EM", "ICN", "PIE", "PT", "RSE", "RET", "SIM", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "PERF", "RUF"]
+ignore = ["ANN101", "ANN102", "S101", "PLR0913", "PTH123"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
