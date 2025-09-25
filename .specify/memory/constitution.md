@@ -1,9 +1,8 @@
 <!--
 Sync Impact Report:
-- Version change: 1.1.0 → 1.1.1
-- Modified sections: 開發標準 - added Python package management specification
-- Added guidance: uv as mandatory Python package manager
-- Templates requiring updates: ✅ No template changes needed (existing task templates compatible with uv)
+- Version change: 1.1.1 → 1.2.0
+- Added sections: Core Principles - VI. 語言與風格指南 (Language and Style Guide)
+- Templates requiring updates: ✅ E:\not_company\ptt-crawl\.specify\templates\plan-template.md
 - Follow-up TODOs: None
 -->
 
@@ -35,6 +34,11 @@ Sync Impact Report:
 PTT 內容必須解析為結構化格式，包含標題、作者、時間、內容、回覆等完整資訊。實現數據驗證和清理機制，確保提取數據的品質。建立標準化的數據模型和儲存格式。
 
 **理由**: 結構化數據便於後續分析和查詢，提高數據價值。
+
+### VI. 語言與風格指南 (Language and Style Guide)
+所有由開發人員或 AI 代理產出的規格文件（spec）、任務列表（tasks）及其他相關規劃文件，必須一律使用繁體中文（Traditional Chinese）進行撰寫。專業術語或無法準確翻譯的詞彙可維持使用英文。
+
+**理由**: 確保團隊成員間的溝通一致性，並讓專案文件對於以繁體中文為主要語言的參與者更加清晰易讀。
 
 ## 數據管理要求
 
@@ -112,4 +116,4 @@ PTT 內容必須解析為結構化格式，包含標題、作者、時間、內�
 - 新增原則或重要說明為次版本號升級
 - 文字修正和澄清為修訂版本號升級
 
-**Version**: 1.1.1 | **Ratified**: 2025-09-22 | **Last Amended**: 2025-09-22
+**Version**: 1.2.0 | **Ratified**: 2025-09-22 | **Last Amended**: 2025-09-25
