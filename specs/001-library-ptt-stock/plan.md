@@ -1,47 +1,79 @@
-# 實作計畫：PTT Stock 板爬蟲 (v2)
 
-**分支**: `001-library-ptt-stock` | **日期**: 2025年9月24日 | **規格**: [spec.md](./spec.md)
-**輸入**: 功能規格來自 `/specs/001-library-ptt-stock/spec.md`
+# Implementation Plan: PTT Stock 板爬蟲
 
-## 總結
-本計畫旨在建立一個 Python 爬蟲專案，用於爬取 PTT Stock 板的文章。此專案將採用兩階段爬取流程：首先爬取文章列表並依主題篩選，然後再根據篩選結果爬取完整的文章內容。專案將使用 `uv` 進行套件管理，並利用 `firecrawl` library 爬取文章內容為 Markdown 格式。爬取後的資料將經過解析，並儲存於 PostgreSQL 資料庫中，以供後續分析。
+**Branch**: `001-library-ptt-stock` | **Date**: 2025-09-25 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/001-library-ptt-stock/spec.md`
 
-## 技術背景
-**語言/版本**: Python 3.11+
-**主要依賴**: firecrawl, psycopg2-binary, beautifulsoup4
-**儲存**: PostgreSQL
-**測試**: pytest
-**目標平台**: 本機或伺服器端執行環境
-**專案類型**: 單一專案 (Single project)
-**效能目標**: [NEEDS CLARIFICATION: 爬取頻率與延遲需求]
-**限制**: 遵守 PTT 的 robots.txt 及 firecrawl API 的使用限制
-**規模/範圍**: 初步完成 Stock 板的爬取，可擴展至其他看板
-
-## 憲法檢查
-*GATE: 必須在 Phase 0 研究前通過。在 Phase 1 設計後重新檢查。*
-
-- **增量爬取原則**: ✅ 計畫將包含狀態記錄機制，以避免重複爬取。
-- **尊重來源網站**: ✅ 將設定合理的爬取延遲，並處理 API 錯誤。
-- **可靠性優先**: ✅ 程式碼將包含錯誤處理與重試機制。
-- **狀態持久化**: ✅ 將使用 PostgreSQL 資料庫儲存爬取狀態與文章資料，符合持久化要求。
-- **結構化數據處理**: ✅ 爬取的 Markdown 將被解析為結構化資料後儲存。
-
-## 專案結構
-
-### 文件 (此功能)
+## Execution Flow (/plan command scope)
 ```
-specs/001-library-ptt-stock/
-├── plan.md              # 本檔案 (/plan 指令輸出)
-├── research.md          # Phase 0 輸出 (/plan 指令)
-├── data-model.md        # Phase 1 輸出 (/plan 指令)
-├── quickstart.md        # Phase 1 輸出 (/plan 指令)
-├── contracts/           # Phase 1 輸出 (/plan 指令)
-└── tasks.md             # Phase 2 輸出 (/tasks 指令 -不由 /plan 建立)
+1. Load feature spec from Input path
+   → If not found: ERROR "No feature spec at {path}"
+2. Fill Technical Context (scan for NEEDS CLARIFICATION)
+   → Detect Project Type from context (web=frontend+backend, mobile=app+api)
+   → Set Structure Decision based on project type
+3. Fill the Constitution Check section based on the content of the constitution document.
+4. Evaluate Constitution Check section below
+   → If violations exist: Document in Complexity Tracking
+   → If no justification possible: ERROR "Simplify approach first"
+   → Update Progress Tracking: Initial Constitution Check
+5. Execute Phase 0 → research.md
+   → If NEEDS CLARIFICATION remain: ERROR "Resolve unknowns"
+6. Execute Phase 1 → contracts, data-model.md, quickstart.md, agent-specific template file (e.g., `CLAUDE.md` for Claude Code, `.github/copilot-instructions.md` for GitHub Copilot, `GEMINI.md` for Gemini CLI, `QWEN.md` for Qwen Code or `AGENTS.md` for opencode).
+7. Re-evaluate Constitution Check section
+   → If new violations: Refactor design, return to Phase 1
+   → Update Progress Tracking: Post-Design Constitution Check
+8. Plan Phase 2 → Describe task generation approach (DO NOT create tasks.md)
+9. STOP - Ready for /tasks command
 ```
 
-### 原始碼 (儲存庫根目錄)
+**IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+- Phase 2: /tasks command creates tasks.md
+- Phase 3-4: Implementation execution (manual or via tools)
+
+## Summary
+建立 PTT Stock 板爬蟲工具，支援依分類篩選文章並使用 Firecrawl API 爬取內容。此系統將實現兩階段爬取流程：首先取得文章列表並進行篩選，再爬取完整 Markdown 格式的文章內容，最終儲存至 PostgreSQL 資料庫。專案採用 uv 管理套件，使用 typer 作為 CLI 工具，並遵循增量爬取和狀態持久化原則。
+
+## Technical Context
+**Language/Version**: Python 3.11+  
+**Primary Dependencies**: typer, firecrawl-py, uv, psycopg2-binary  
+**Storage**: PostgreSQL 資料庫 + Redis 狀態管理 + JSON 檔案備份  
+**Testing**: pytest  
+**Target Platform**: Linux/Windows 伺服器  
+**Project Type**: single - CLI 工具  
+**Performance Goals**: 每分鐘不超過 60 個頁面  
+**Constraints**: 遵守 robots.txt，實現請求間隔控制，記憶體使用穩定  
+**Scale/Scope**: 初期支援 PTT Stock 板，可擴展至其他看板  
+
+## Constitution Check
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+**✅ 增量爬取原則**: 設計包含狀態追蹤機制，避免重複爬取已處理內容  
+**✅ 尊重來源網站**: 實現請求間隔控制，遵守合理爬取頻率限制  
+**✅ 可靠性優先**: 包含錯誤處理、重試機制和監控告警系統  
+**✅ 狀態持久化**: 採用 Redis + JSON 檔案雙層架構確保狀態可恢復  
+**✅ 結構化數據處理**: 解析 PTT 內容為結構化格式並標準化儲存  
+**✅ 語言與風格指南**: 所有文件使用繁體中文撰寫  
+**✅ uv 套件管理**: 符合憲法要求使用 uv 管理依賴  
+**✅ 測試覆蓋率**: 設計包含單元測試和整合測試，目標 80% 覆蓋率  
+
+**狀態**: PASS - 無憲法違規項目
+
+## Project Structure
+
+### Documentation (this feature)
 ```
-# 選項 1: 單一專案 (預設)
+specs/[###-feature]/
+├── plan.md              # This file (/plan command output)
+├── research.md          # Phase 0 output (/plan command)
+├── data-model.md        # Phase 1 output (/plan command)
+├── quickstart.md        # Phase 1 output (/plan command)
+├── contracts/           # Phase 1 output (/plan command)
+└── tasks.md             # Phase 2 output (/tasks command - NOT created by /plan)
+```
+
+### Source Code (repository root)
+```
+# Option 1: Single project (DEFAULT)
 src/
 ├── models/
 ├── services/
@@ -52,76 +84,138 @@ tests/
 ├── contract/
 ├── integration/
 └── unit/
+
+# Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure]
 ```
 
-**結構決策**: 選項 1: 單一專案
+**Structure Decision**: Option 1 - Single project (CLI 工具專案結構)
 
-## Phase 0: 輪廓與研究
-1.  **從技術背景中提取未知數**:
-    *   研究 `firecrawl` 的 Markdown 輸出格式，以確定解析方法。
-    *   確認 PostgreSQL 的最佳實踐，特別是資料庫綱要 (schema) 設計。
-    *   定義爬取頻率與延遲的具體數值。
+## Phase 0: Outline & Research
+1. **Extract unknowns from Technical Context** above:
+   - For each NEEDS CLARIFICATION → research task
+   - For each dependency → best practices task
+   - For each integration → patterns task
 
-2.  **產生並分派研究代理**:
-    *   任務: "研究 `firecrawl` 的 Markdown 輸出，為 PTT 文章內容解析提供方案"
-    *   任務: "為爬蟲專案設計 PostgreSQL 的 `articles` 資料表綱要"
+2. **Generate and dispatch research agents**:
+   ```
+   For each unknown in Technical Context:
+     Task: "Research {unknown} for {feature context}"
+   For each technology choice:
+     Task: "Find best practices for {tech} in {domain}"
+   ```
 
-3.  **在 `research.md` 中整合研究結果**。
+3. **Consolidate findings** in `research.md` using format:
+   - Decision: [what was chosen]
+   - Rationale: [why chosen]
+   - Alternatives considered: [what else evaluated]
 
-**輸出**: `research.md`，其中所有 [NEEDS CLARIFICATION] 都已解決。
+**Output**: research.md with all NEEDS CLARIFICATION resolved
 
-## Phase 1: 設計與合約
-*先決條件: research.md 已完成*
+## Phase 1: Design & Contracts
+*Prerequisites: research.md complete*
 
-1.  **從功能規格中提取實體** → `data-model.md`:
-    *   定義 `Article` 實體，包含 `id`, `title`, `url`, `content`, `author`, `created_at` 等欄位。
+1. **Extract entities from feature spec** → `data-model.md`:
+   - Entity name, fields, relationships
+   - Validation rules from requirements
+   - State transitions if applicable
 
-2.  **產生 API 合約** (如果適用，此處為內部介面):
-    *   定義 `CrawlerService` 的介面，包含 `fetch_article_list(board_name, topic)` 和 `fetch_article_content(url)` 方法。
-    *   輸出至 `/contracts/`。
+2. **Generate API contracts** from functional requirements:
+   - For each user action → endpoint
+   - Use standard REST/GraphQL patterns
+   - Output OpenAPI/GraphQL schema to `/contracts/`
 
-3.  **從合約產生合約測試**:
-    *   為 `CrawlerService` 的介面撰寫測試，驗證輸入與輸出。
+3. **Generate contract tests** from contracts:
+   - One test file per endpoint
+   - Assert request/response schemas
+   - Tests must fail (no implementation yet)
 
-4.  **從使用者故事中提取測試場景**:
-    *   每個故事 → 整合測試場景。
-    *   `quickstart.md` 的測試 = 故事驗證步驟。
+4. **Extract test scenarios** from user stories:
+   - Each story → integration test scenario
+   - Quickstart test = story validation steps
 
-**輸出**: data-model.md, /contracts/*, 失敗的測試, quickstart.md
+5. **Update agent file incrementally** (O(1) operation):
+   - Run `.specify/scripts/powershell/update-agent-context.ps1 -AgentType copilot`
+     **IMPORTANT**: Execute it exactly as specified above. Do not add or remove any arguments.
+   - If exists: Add only NEW tech from current plan
+   - Preserve manual additions between markers
+   - Update recent changes (keep last 3)
+   - Keep under 150 lines for token efficiency
+   - Output to repository root
 
-## Phase 2: 任務規劃方法
-*本節描述 /tasks 指令將執行的操作 - 不在 /plan 期間執行*
+**Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
 
-**任務產生策略**:
--   從 Phase 1 的設計文件 (合約、資料模型、快速入門) 產生任務。
--   `fetch_article_list` → 爬取文章列表並篩選的任務。
--   `fetch_article_content` → 根據 URL 爬取單一文章內容的任務。
--   每個合約 → 合約測試任務 [P]
--   每個實體 → 模型建立任務 [P]
--   每個使用者故事 → 整合測試任務
--   為使測試通過而進行的實作任務。
+## Phase 2: Task Planning Approach
+*This section describes what the /tasks command will do - DO NOT execute during /plan*
 
-**排序策略**:
--   TDD 順序: 測試先於實作。
--   依賴順序: 模型 → 服務 → CLI。
--   標記 [P] 表示可並行執行 (獨立檔案)。
+**Task Generation Strategy**:
+- Load `.specify/templates/tasks-template.md` as base
+- Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
+- Each contract → contract test task [P]
+- Each entity → model creation task [P] 
+- Each user story → integration test task
+- Implementation tasks to make tests pass
 
-## 進度追蹤
-*此檢查清單在執行流程中更新*
+**Ordering Strategy**:
+- TDD order: Tests before implementation 
+- Dependency order: Models before services before UI
+- Mark [P] for parallel execution (independent files)
 
-**階段狀態**:
-- [X] Phase 0: 研究完成 (/plan 指令)
-- [X] Phase 1: 設計完成 (/plan 指令)
-- [ ] Phase 2: 任務規劃完成 (/plan 指令 - 僅描述方法)
-- [ ] Phase 3: 任務已產生 (/tasks 指令)
-- [ ] Phase 4: 實作完成
-- [ ] Phase 5: 驗證通過
+**Estimated Output**: 25-30 numbered, ordered tasks in tasks.md
 
-**閘門狀態**:
-- [X] 初始憲法檢查: 通過
-- [X] 設計後憲法檢查: 通過
-- [ ] 所有 [NEEDS CLARIFICATION] 已解決
-- [ ] 複雜度偏差已記錄
+**IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
+
+## Phase 3+: Future Implementation
+*These phases are beyond the scope of the /plan command*
+
+**Phase 3**: Task execution (/tasks command creates tasks.md)  
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
+**Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
+
+## Complexity Tracking
+*Fill ONLY if Constitution Check has violations that must be justified*
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+
+
+## Progress Tracking
+*This checklist is updated during execution flow*
+
+**Phase Status**:
+- [X] Phase 0: Research complete (/plan command)
+- [X] Phase 1: Design complete (/plan command)
+- [X] Phase 2: Task planning complete (/plan command - describe approach only)
+- [ ] Phase 3: Tasks generated (/tasks command)
+- [ ] Phase 4: Implementation complete
+- [ ] Phase 5: Validation passed
+
+**Gate Status**:
+- [X] Initial Constitution Check: PASS
+- [X] Post-Design Constitution Check: PASS
+- [X] All NEEDS CLARIFICATION resolved
+- [X] Complexity deviations documented
 
 ---
-*基於 Constitution v1.1.1 - 請參閱 `/memory/constitution.md`*
+*Based on Constitution v1.2.0 - See `/memory/constitution.md`*
