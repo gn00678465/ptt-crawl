@@ -1,12 +1,3 @@
-<!--
-Sync Impact Report:
-- Version change: 1.1.0 → 1.1.1
-- Modified sections: 開發標準 - added Python package management specification
-- Added guidance: uv as mandatory Python package manager
-- Templates requiring updates: ✅ No template changes needed (existing task templates compatible with uv)
-- Follow-up TODOs: None
--->
-
 # PTT 爬蟲系統 Constitution
 
 ## Core Principles
@@ -26,25 +17,42 @@ Sync Impact Report:
 
 **理由**: 爬蟲系統需要長期穩定運行，網路環境和目標網站狀態不可控。
 
+<!--
+SYNC IMPACT REPORT
+- Version: 1.0.0 -> 1.1.0
+- Modified Principles:
+  - "IV. 狀態持久化 (State Persistence)": Re-written to remove Redis and focus solely on JSON persistence.
+- Modified Sections:
+  - "數據管理要求": Removed two-tier (Redis + JSON) state management architecture.
+  - "開發標準": Updated testing requirements to remove Redis-specific tests.
+- Templates Requiring Updates:
+  - ✅ .specify/memory/constitution.md (updated)
+  - ⚠ .specify/templates/plan-template.md (pending review)
+  - ⚠ .specify/templates/spec-template.md (pending review)
+  - ⚠ .specify/templates/tasks-template.md (pending review)
+-->
 ### IV. 狀態持久化 (State Persistence)
-爬取狀態必須採用混合持久化策略，確保在任何故障情況下都能恢復。系統必須同時使用 Redis 提供高效能即時狀態管理，以及 JSON 檔案提供可靠的持久化備份。所有狀態變更必須同步更新至兩個儲存層，並實現自動狀態恢復機制。系統啟動時必須檢查 Redis 可用性，若 Redis 資料遺失則自動從 JSON 備份恢復狀態。
+爬取狀態必須採用基於 JSON 檔案的持久化策略，確保在任何故障情況下都能恢復。系統必須維護可靠的狀態追蹤機制，所有狀態變更必須同步更新至 JSON 檔案，並實現自動狀態恢復機制。系統啟動時必須從 JSON 備份恢復狀態。
 
-**理由**: Redis 重啟會導致狀態重置，純記憶體儲存無法保證資料持久性，需要檔案系統備份確保系統故障後能夠恢復爬取進度。
+**理由**: 純記憶體儲存無法保證資料持久性，需要檔案系統備份確保系統故障後能夠恢復爬取進度。
 
 ### V. 結構化數據處理 (Structured Data Processing)
 PTT 內容必須解析為結構化格式，包含標題、作者、時間、內容、回覆等完整資訊。實現數據驗證和清理機制，確保提取數據的品質。建立標準化的數據模型和儲存格式。
 
 **理由**: 結構化數據便於後續分析和查詢，提高數據價值。
 
+### VI. 語言與風格指南 (Language and Style Guide)
+所有由開發人員或 AI 代理產出的規格文件（spec）、任務列表（tasks）及其他相關規劃文件，必須一律使用繁體中文（Traditional Chinese）進行撰寫。專業術語或無法準確翻譯的詞彙可維持使用英文。
+
+**理由**: 確保團隊成員間的溝通一致性，並讓專案文件對於以繁體中文為主要語言的參與者更加清晰易讀。
+
 ## 數據管理要求
 
 ### 儲存架構
 - **主要數據庫**: PostgreSQL 用於結構化數據儲存
-- **狀態管理雙層架構**:
-  - **Redis**: 高效能即時狀態追蹤和進度查詢（設定 AOF 或 RDB 持久化）
+- **狀態管理**:
   - **JSON 檔案**: 可靠的狀態備份，每次狀態變更時同步更新
-  - **狀態同步**: 所有狀態變更必須原子性地同時更新 Redis 和 JSON 檔案
-  - **恢復機制**: 系統啟動時檢查 Redis，若資料不完整則從 JSON 檔案恢復
+  - **恢復機制**: 系統啟動時從 JSON 檔案恢復
 - **內容儲存**: 支援文件系統或雲端儲存作為原始內容備份
 - **備份策略**: 定期自動備份，支援增量和完整備份
 
@@ -57,7 +65,7 @@ PTT 內容必須解析為結構化格式，包含標題、作者、時間、內�
 
 ### 數據保留政策
 - 爬取狀態保留時間不少於 30 天
-- JSON 狀態備份檔案保留不少於 7 個版本
+- **JSON 狀態備份檔案保留不少於 7 個版本**
 - 錯誤日誌保留時間不少於 7 天
 - 原始內容根據需求可選擇保留或僅保存解析後數據
 - 實現數據歸檔機制，支援長期儲存需求
@@ -73,7 +81,7 @@ PTT 內容必須解析為結構化格式，包含標題、作者、時間、內�
 ### 測試要求
 - 所有爬取邏輯必須有對應的單元測試
 - 實現整合測試驗證與 Firecrawl 服務的互動
-- **狀態持久化測試**: 必須測試 Redis 故障恢復、JSON 檔案損壞處理、狀態同步機制
+- **狀態持久化測試**: 必須測試 JSON 檔案的讀寫、損壞處理、狀態同步機制
 - 建立模擬測試環境，避免對真實 PTT 網站造成負擔
 - 測試覆蓋率不低於 80%
 
@@ -112,4 +120,4 @@ PTT 內容必須解析為結構化格式，包含標題、作者、時間、內�
 - 新增原則或重要說明為次版本號升級
 - 文字修正和澄清為修訂版本號升級
 
-**Version**: 1.1.1 | **Ratified**: 2025-09-22 | **Last Amended**: 2025-09-22
+**Version**: 1.1.0 | **Ratified**: 2025-09-22 | **Last Amended**: 2025-09-26
